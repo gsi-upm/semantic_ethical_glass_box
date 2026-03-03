@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --brand-gsi: #00a9e0;
+  --brand-upm: #00629b;
+  --brand-upm-strong: #00517f;
+  --bg: #f2f8fc;
+  --surface: #ffffff;
+  --surface-alt: #e8f5fd;
+  --border: #c5dceb;
+  --border-muted: #d9e8f2;
+  --ink-900: #0f172a;
+  --ink-800: #1e293b;
+  --ink-700: #334155;
+  --ink-600: #475569;
+  --ink-500: #64748b;
+  --accent: #00629b;
+  --accent-2: #00a9e0;
+  --danger: #b91c1c;
+  --panel-dark: #004f7b;
+  --panel-dark-2: #003f63;
+  --panel-ink: #eaf7ff;
+  --shadow-sm: 0 2px 12px rgba(0, 98, 155, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at 20% -5%, rgba(0, 169, 224, 0.18), transparent 34%),
+    radial-gradient(circle at 90% -8%, rgba(0, 98, 155, 0.16), transparent 31%),
+    var(--bg);
+  color: var(--ink-900);
+  font-family: 'Manrope', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.45;
+}
+
+#app {
+  padding: 0.9rem;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: linear-gradient(130deg, var(--accent), var(--accent-2));
+  color: #effcfe;
+  font-weight: 640;
+  font-size: 0.9rem;
+  padding: 0.55rem 0.8rem;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: #ffffff;
+  color: var(--ink-800);
+  border-color: var(--border);
+}
+
+.btn.danger {
+  background: linear-gradient(130deg, #dc2626, #b91c1c);
+  color: #fff1f2;
+}

@@ -1,0 +1,109 @@
+"""Centralized runtime settings for the backend service."""
+
+from __future__ import annotations
+
+import json
+import os
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass(slots=True)
+class SharedContextSettings:
+    namespace: str
+    time_window_seconds: float
+    match_threshold: float
+    ambiguous_threshold: float
+    close_score_margin: float
+    strict_modality_mismatch: bool
+
+
+@dataclass(slots=True)
+class BackendSettings:
+    log_level: str
+    log_file: str
+    version: str
+    api_info_file: str
+    api_description_file: str
+    max_startup_retries: int
+    max_backoff_seconds: int
+    runtime_ping_interval: int
+    cors_origins: tuple[str, ...]
+    cors_origin_regex: str | None
+    shared_context: SharedContextSettings
+
+
+def _first_existing_path(*candidates: str) -> str:
+    for candidate in candidates:
+        if Path(candidate).exists():
+            return candidate
+    return candidates[0]
+
+
+def load_settings() -> BackendSettings:
+    raw_cors_origins = os.getenv("CORS_ORIGINS", "").strip()
+    if raw_cors_origins:
+        cors_origins = tuple(origin.strip() for origin in raw_cors_origins.split(",") if origin.strip())
+    else:
+        cors_origins = ("http://localhost:5173", "http://127.0.0.1:5173")
+
+    default_api_info_file = _first_existing_path("./api_info.json", "./apps/backend/api_info/segb/api_info.json")
+    default_api_description_file = _first_existing_path(
+        "./api_description.md",
+        "./apps/backend/api_info/segb/api_description.md",
+    )
+    api_info_file = os.getenv("API_INFO_FILE_PATH") or default_api_info_file
+    api_description_file = os.getenv("API_DESCRIPTION_FILE_PATH") or default_api_description_file
+
+    return BackendSettings(
+        log_level=os.getenv("LOGGING_LEVEL", "INFO").upper(),
+        log_file=os.getenv("SERVER_LOG_FILE", "segb.log"),
+        version=os.getenv("VERSION") or "stable",
+        api_info_file=api_info_file,
+        api_description_file=api_description_file,
+        max_startup_retries=int(os.getenv("MAX_STARTUP_RETRIES", "6")),
+        max_backoff_seconds=int(os.getenv("MAX_BACKOFF_SECONDS", "16")),
+        runtime_ping_interval=int(os.getenv("RUNTIME_PING_INTERVAL", "5")),
+        cors_origins=cors_origins,
+        cors_origin_regex=os.getenv("CORS_ORIGIN_REGEX"),
+        shared_context=SharedContextSettings(
+            namespace=os.getenv("SHARED_CONTEXT_NAMESPACE", "https://gsi.upm.es/segb/shared-events/"),
+            time_window_seconds=float(os.getenv("SHARED_CONTEXT_TIME_WINDOW_SECONDS", "3.0")),
+            match_threshold=float(os.getenv("SHARED_CONTEXT_MATCH_THRESHOLD", "0.85")),
+            ambiguous_threshold=float(os.getenv("SHARED_CONTEXT_AMBIGUOUS_THRESHOLD", "0.70")),
+            close_score_margin=float(os.getenv("SHARED_CONTEXT_CLOSE_MARGIN", "0.05")),
+            strict_modality_mismatch=os.getenv("SHARED_CONTEXT_STRICT_MODALITY_MISMATCH", "false").lower()
+            in {"1", "true", "yes", "y", "on"},
+        ),
+    )
+
+
+def load_api_info(path: str) -> dict:
+    default_info = {
+        "title": "SEGB",
+        "contact": {
+            "name": "GSI-UPM",
+            "url": "https://www.gsi.upm.es",
+            "email": "gsi@autolistas.upm.es",
+        },
+        "license": {
+            "name": "Apache-2.0",
+            "url": "https://www.apache.org/licenses/LICENSE-2.0",
+        },
+    }
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        return default_info
+
+
+def load_api_description(path: str) -> str:
+    fallback = "Semantic Ethical Glass Box (SEGB) API. See <https://segb.readthedocs.io/en/latest/>."
+    file_path = Path(path)
+    if not file_path.exists():
+        return fallback
+    try:
+        return file_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return fallback

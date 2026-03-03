@@ -1,0 +1,37 @@
+__pycache__/
+.pytest_cache/
+.ipynb_checkpoints/
+tutorial/graph.ttl
+tutorial/interactive_segb_graph.html
+.venv
+.vscode
+.env
+k8s/
+playground/
+logs/
+local_scripts/
+new_version_publisher.sh
+*.log
+*.bak
+*.env
+logs
+db/
+final.ttl
+apps/frontend/segb-ui/node_modules/
+apps/frontend/segb-ui/dist/
+
+# Python packaging artifacts
+*.egg-info/
+*.cover
+build/
+dist/
+site/
+
+# ROS2 workspace artifacts
+ros4hri-exchange 
+ros4hri-exchange/build/
+ros4hri-exchange/install/
+ros4hri-exchange/log/
+ros4hri-exchange/ws/build/
+ros4hri-exchange/ws/install/
+ros4hri-exchange/ws/log/

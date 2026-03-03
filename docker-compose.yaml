@@ -1,0 +1,78 @@
+services:
+  # ─────────────────────────────
+  # SEGB Backend (FastAPI)
+  # ─────────────────────────────
+  amor-segb:
+    container_name: amor-segb-server
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    ports:
+      - "5000:5000"
+    networks:
+      - internal_network
+    depends_on:
+      - amor-segb-virtuoso
+    environment:
+      - LOGGING_LEVEL=DEBUG
+      - VERSION=${VERSION:-stable}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - VIRTUOSO_ENDPOINT=${VIRTUOSO_ENDPOINT:-http://amor-segb-virtuoso:8890/sparql-auth}
+      - VIRTUOSO_GRAPH_URI=${VIRTUOSO_GRAPH_URI:-http://amor-segb/events}
+      - VIRTUOSO_USER=${VIRTUOSO_USER:-dba}
+      - VIRTUOSO_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
+    volumes:
+      - ./logs:/logs
+    restart: always
+
+  # ─────────────────────────────
+  # Virtuoso Triple Store
+  # ─────────────────────────────
+  amor-segb-virtuoso:
+    container_name: amor-segb-virtuoso
+    image: openlink/virtuoso-opensource-7
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    environment:
+      - DBA_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
+    volumes:
+      - virtuoso_data:/database
+    networks:
+      - internal_network
+
+  # ─────────────────────────────
+  # Frontend SEGB-UI (Vue + Nginx)
+  # ─────────────────────────────
+  segb-ui:
+    container_name: segb-ui
+    build:
+      context: ./apps/frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: "/api"
+    depends_on:
+      - amor-segb
+    ports:
+      - "8080:8080"
+    networks:
+      - internal_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+    restart: always
+
+# ─────────────────────────────
+# Networks
+# ─────────────────────────────
+networks:
+  internal_network:
+    driver: bridge
+
+# ─────────────────────────────
+# Persistent volumes
+# ─────────────────────────────
+volumes:
+  virtuoso_data:

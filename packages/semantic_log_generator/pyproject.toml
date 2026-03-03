@@ -1,0 +1,61 @@
+[project]
+name = "semantic-log-generator"
+version = "1.0.0"
+description = "Production-ready semantic RDF logging toolkit for SEGB-enabled robots"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    { name = "José Luis Benítez Santana", email = "jose.benitez.upm@gmail.com" },
+]
+maintainers = [
+    { name = "José Luis Benítez Santana", email = "jose.benitez.upm@gmail.com" }
+]
+keywords = ["segb", "semantic-logging", "rdf", "ros2", "knowledge-graph", "explainability"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "rdflib>=7.1.3,<8",
+    "requests>=2.31.0,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/gsi-upm/semantic_ethical_glass_box"
+Repository = "https://github.com/gsi-upm/semantic_ethical_glass_box"
+Documentation = "https://segb.readthedocs.io/en/latest/" 
+Issues = "https://github.com/gsi-upm/semantic_ethical_glass_box/issues"
+Changelog = "https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/packages/semantic_log_generator/CHANGELOG.md"
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.11,<0.12",
+    "mypy>=1.15,<2.0",
+]
+
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM"]

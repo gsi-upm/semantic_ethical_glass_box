@@ -1,0 +1,87 @@
+services:
+  # Backend API with hot reload
+  amor-segb:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    command:
+      - uv
+      - run
+      - uvicorn
+      - --app-dir
+      - /app/src
+      - main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5000"
+      - --lifespan
+      - on
+      - --reload
+      - --reload-dir
+      - /app/src
+    ports:
+      - "5000:5000"
+    networks:
+      - internal_network
+    depends_on:
+      - amor-segb-virtuoso
+    environment:
+      - LOGGING_LEVEL=DEBUG
+      - VERSION=${VERSION:-dev}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - VIRTUOSO_ENDPOINT=${VIRTUOSO_ENDPOINT:-http://amor-segb-virtuoso:8890/sparql-auth}
+      - VIRTUOSO_GRAPH_URI=${VIRTUOSO_GRAPH_URI:-http://amor-segb/events}
+      - VIRTUOSO_USER=${VIRTUOSO_USER:-dba}
+      - VIRTUOSO_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
+      - CORS_ORIGIN_REGEX=^https?://(localhost|127\\.0\\.0\\.1|172\\.[0-9]+\\.[0-9]+\\.[0-9]+):5173$
+      - WATCHFILES_FORCE_POLLING=true
+    volumes:
+      - ./apps/backend/src:/app/src
+      - ./apps/backend/static:/app/static
+      - ./examples:/app/examples
+      - ./packages/semantic_log_generator/src/semantic_log_generator:/app/semantic_log_generator
+      - ./apps/backend/api_info/segb/api_info.json:/app/api_info.json
+      - ./apps/backend/api_info/segb/api_description.md:/app/api_description.md
+      - ./logs:/logs
+
+  # Virtuoso triple store
+  amor-segb-virtuoso:
+    image: openlink/virtuoso-opensource-7
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    environment:
+      - DBA_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
+    volumes:
+      - virtuoso_data:/database
+    networks:
+      - internal_network
+
+  # Frontend with Vite HMR
+  segb-ui:
+    image: node:20-alpine
+    working_dir: /app
+    command: >
+      sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    depends_on:
+      - amor-segb
+    environment:
+      - VITE_API_URL=http://localhost:5000
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=100
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/frontend/segb-ui:/app
+      - segb_ui_node_modules:/app/node_modules
+    networks:
+      - internal_network
+
+networks:
+  internal_network:
+    driver: bridge
+
+volumes:
+  virtuoso_data:
+  segb_ui_node_modules:
