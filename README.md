@@ -6,10 +6,7 @@ SEGB is a centralized semantic logging stack for robot interactions:
 - backend ingests and stores triples in Virtuoso
 - web UI helps inspect reports, graph structure, shared-context resolution, and backend server logs
 
-This repository currently contains two engineering tracks:
-
-- Centralized SEGB stack (backend, frontend, logger package, docs, tests)
-- ROS2 robot workspace (`ros4hri-exchange`) used by robot simulation/runtime
+This repository contains the centralized SEGB stack (backend, frontend, logger package, docs, tests).
 
 ## Repository Structure (Quick View)
 
@@ -27,21 +24,19 @@ This repository currently contains two engineering tracks:
 | `packages/semantic_log_generator/tests` | `semantic_log_generator` unit tests |
 | `examples/simulations/tests` | Simulation integration tests (use-case flows) |
 | `tests` | Global/cross-project tests (reserved scope) |
-| `ros4hri-exchange/ws/src` | ROS2 robot packages used by simulated robot runtime |
-| `ros4hri-exchange/semantic_log_generator` | ROS-side copy of logger package (kept for robot workspace compatibility) |
 | `docker-compose.yaml` | Production-like centralized deployment |
 | `docker-compose.dev.yml` | Development deployment with hot reload |
 
-Important:
+Notes:
 
-- `ros4hri-exchange` is used as a runtime volume by the robot simulator/container.
-- Treat `ros4hri-exchange/{build,install,log,ws/build,ws/install,ws/log}` as generated artifacts, not source of truth.
+- `tests/` is reserved for cross-project checks; project-specific tests live with each project.
+- External robot runtime workspaces are local-only and are not part of the versioned source tree.
 
 ## Quick Start (Full Flow)
 
-### 0) (Optional) Configure environment
+### 0) Configure environment
 
-Docker Compose has sensible defaults, so a `.env` file is optional. If you want to override defaults (Virtuoso endpoint/graph, password, `SECRET_KEY`, etc.):
+Docker Compose has sensible defaults. In most cases, you only need to set `VIRTUOSO_PASSWORD` in `.env`:
 
 ```bash
 cp .env.example .env
@@ -56,7 +51,8 @@ Important:
 ### 1) Start the centralized stack
 
 ```bash
-docker compose -f docker-compose.yaml up --build -d
+docker compose -f docker-compose.yaml pull
+docker compose -f docker-compose.yaml up -d
 ```
 
 ### 2) Create a Python environment for simulations (one-time)

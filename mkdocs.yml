@@ -8,13 +8,18 @@ theme:
 
 nav:
   - Home: index.md
-  - Centralized Deployment: deployment_centralized.md
-  - semantic_log_generator:
-      - Installation: semantic_log_generator_installation.md
-      - Usage: semantic_log_generator_usage.md
-      - Real-World Integration Example: semantic_log_generator_real_world_integration.md
-      - TTL Internals: ttl_generation_internals.md
-  - Web Observability: web_observability.md
+  - Recommended Path:
+      - 1. Centralized Deployment (Backend + Frontend): deployment/centralized.md
+      - 2. Install semantic_log_generator: package/installation.md
+      - "3. Basic Use: Post Your First Log to SEGB": package/usage.md
+      - "4. Learn Main SEGB Features (Simple)": getting-started/segb-features.md
+      - 5. Real Use Case with Robot Simulator: package/ros4hri-integration.md
+  - Additional Guides:
+      - Quickstart: getting-started/quickstart.md
+      - Web Observability: operations/web-observability.md
   - Backend:
-      - Shared Context: backend/shared_context.md
-  - Monorepo Structure: monorepo_structure.md
+      - Shared Context: backend/shared-context.md
+  - Internals:
+      - TTL Generation Pipeline: internals/ttl-generation.md
+  - Reference:
+      - Monorepo Structure: reference/monorepo-structure.md

@@ -58,4 +58,4 @@ docker compose -f docker-compose.yaml up --build
 
 ## Related Docs
 
-- Web usage guide: [`docs/web_observability.md`](../../docs/web_observability.md)
+- Web usage guide: [`docs/operations/web-observability.md`](../../docs/operations/web-observability.md)

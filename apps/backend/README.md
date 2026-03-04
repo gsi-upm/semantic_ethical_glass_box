@@ -109,5 +109,5 @@ PYTHONPATH=apps/backend/src:packages/semantic_log_generator/src ./.venv/bin/pyth
 
 ## Related Docs
 
-- Shared-context internals: [`docs/backend/shared_context.md`](../../docs/backend/shared_context.md)
-- Centralized deployment: [`docs/deployment_centralized.md`](../../docs/deployment_centralized.md)
+- Shared-context internals: [`docs/backend/shared-context.md`](../../docs/backend/shared-context.md)
+- Centralized deployment: [`docs/deployment/centralized.md`](../../docs/deployment/centralized.md)

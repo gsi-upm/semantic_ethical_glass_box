@@ -128,9 +128,9 @@ Environment variables for `build_http_shared_context_resolver_from_env()`:
 
 ## Related Docs
 
-- Installation guide: [`docs/semantic_log_generator_installation.md`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/docs/semantic_log_generator_installation.md)
-- Usage guide: [`docs/semantic_log_generator_usage.md`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/docs/semantic_log_generator_usage.md)
-- Internal TTL generation: [`docs/ttl_generation_internals.md`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/docs/ttl_generation_internals.md)
+- Installation guide: [`docs/package/installation.md`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/docs/package/installation.md)
+- Usage guide: [`docs/package/usage.md`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/docs/package/usage.md)
+- Internal TTL generation: [`docs/internals/ttl-generation.md`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/docs/internals/ttl-generation.md)
 
 ## Tests
 

@@ -1,34 +1,30 @@
 # SEGB Documentation
 
-This documentation is written for engineers who need to deploy, understand, and use SEGB quickly.
+SEGB documentation is organized in one linear path so you can run the stack first and learn features progressively.
 
-## Core Guides
+## Recommended Path (Order to Follow)
 
-- [Centralized deployment](deployment_centralized.md)
-- [Install `semantic_log_generator`](semantic_log_generator_installation.md)
-- [Use `semantic_log_generator`](semantic_log_generator_usage.md)
-- [Real-world integration example](semantic_log_generator_real_world_integration.md)
-- [Use the web UI to inspect data](web_observability.md)
-- [How TTL is generated internally](ttl_generation_internals.md)
+1. [Centralized Deployment (Backend + Frontend)](deployment/centralized.md)
+2. [Install `semantic_log_generator`](package/installation.md)
+3. [Basic Use: Post Your First Log to SEGB](package/usage.md)
+4. [Learn Main SEGB Features (Simple)](getting-started/segb-features.md)
+5. [Real Use Case with Robot Simulator (ROS4HRI)](package/ros4hri-integration.md)
 
-## Additional Technical Docs
+## Additional Guides
 
-- [Shared-context resolver details](backend/shared_context.md)
-- [Monorepo structure](monorepo_structure.md)
+- [Quickstart](getting-started/quickstart.md)
+- [Web Observability](operations/web-observability.md)
 
-## Fast Entry Point
+## Backend and Internals
 
-If you only need to run the full flow quickly:
+- [Shared Context Resolution](backend/shared-context.md)
+- [TTL Generation Pipeline](internals/ttl-generation.md)
 
-1. (Optional) Copy `.env.example` to `.env` to override defaults.
-2. Deploy with Docker Compose.
-3. Create a Python virtualenv and install `semantic_log_generator`.
-4. Run the report-ready simulation use case to publish sample data.
-5. Open the web UI and review Reports + KG Graph views.
+## Reference
 
-See details in [Centralized deployment](deployment_centralized.md).
+- [Monorepo Structure](reference/monorepo-structure.md)
 
-To serve this documentation locally:
+## Local Docs Preview
 
 ```bash
 python -m pip install -r docs/requirements.txt

@@ -4,9 +4,8 @@ services:
   # ─────────────────────────────
   amor-segb:
     container_name: amor-segb-server
-    build:
-      context: .
-      dockerfile: apps/backend/Dockerfile
+    image: ${SEGB_BACKEND_IMAGE:-ghcr.io/gsi-upm/semantic_ethical_glass_box/amor-segb}:${SEGB_IMAGE_TAG:-latest}
+    pull_policy: always
     ports:
       - "5000:5000"
     networks:
@@ -46,11 +45,8 @@ services:
   # ─────────────────────────────
   segb-ui:
     container_name: segb-ui
-    build:
-      context: ./apps/frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: "/api"
+    image: ${SEGB_FRONTEND_IMAGE:-ghcr.io/gsi-upm/semantic_ethical_glass_box/segb-ui}:${SEGB_IMAGE_TAG:-latest}
+    pull_policy: always
     depends_on:
       - amor-segb
     ports:

@@ -27,7 +27,7 @@ Tutorial notebooks (one per use case):
 
 Prerequisites:
 
-- SEGB stack running (see `docs/deployment_centralized.md`)
+- SEGB stack running (see `docs/deployment/centralized.md`)
 - A local Python virtualenv with `semantic_log_generator` installed (see repo `README.md`)
 
 ```bash
