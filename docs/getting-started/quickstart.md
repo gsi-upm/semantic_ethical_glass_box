@@ -9,6 +9,7 @@ Run SEGB end-to-end in the shortest possible path: backend + Virtuoso + UI + dem
 - Docker Engine + Docker Compose v2
 - Free host ports: `5000`, `8080`, `8890`, `1111`
 - Python 3.10+
+- Run commands from repository root (`semantic_ethical_glass_box/`)
 
 ## Steps
 
@@ -23,6 +24,14 @@ Set at least:
 ```env
 VIRTUOSO_PASSWORD=change-this-password
 ```
+
+Important:
+
+- This initializes the Virtuoso DBA password only on first volume creation.
+- If you already have `virtuoso_data`, changing `VIRTUOSO_PASSWORD` in `.env` does not update the existing DB password.
+
+If auth is enabled (`SECRET_KEY` set), generate a token as documented in
+[Centralized Deployment: Step 5](../deployment/centralized.md#5-generate-jwt-only-if-auth-enabled).
 
 ### 2) Start centralized services
 
@@ -46,10 +55,10 @@ Expected:
 ### 4) Prepare Python environment
 
 ```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -U pip
-./.venv/bin/python -m pip install -e packages/semantic_log_generator
-./.venv/bin/python -m pip install pydantic
+python3 -m venv .segb_env
+./.segb_env/bin/python -m pip install -U pip
+./.segb_env/bin/python -m pip install -e packages/semantic_log_generator
+./.segb_env/bin/python -m pip install pydantic
 ```
 
 ### 5) Load demo dataset
@@ -57,7 +66,7 @@ python3 -m venv .venv
 Auth disabled:
 
 ```bash
-./.venv/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
+./.segb_env/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
   --publish-url http://localhost:5000 \
   --no-print-ttl
 ```
@@ -65,7 +74,7 @@ Auth disabled:
 Auth enabled:
 
 ```bash
-./.venv/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
+./.segb_env/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
   --publish-url http://localhost:5000 \
   --token "<admin_jwt>" \
   --no-print-ttl
@@ -80,10 +89,17 @@ Warning: this flow clears the configured graph before insertion.
 
 ## Validation
 
-Run:
+If auth is disabled:
 
 ```bash
 curl -s http://localhost:5000/events | head -n 20
+```
+
+If auth is enabled:
+
+```bash
+curl -s http://localhost:5000/events \
+  -H "Authorization: Bearer <auditor_or_admin_jwt>" | head -n 20
 ```
 
 Expected: non-empty Turtle output.
@@ -93,9 +109,3 @@ Expected: non-empty Turtle output.
 - `ready=false` on `/healthz/ready`: check `docker compose -f docker-compose.yaml logs -f amor-segb amor-segb-virtuoso`.
 - `401/403` while loading demo data: provide a valid `--token` with `admin` role.
 - Empty reports: run the dataset load step again and refresh `/reports`.
-
-## Next
-
-- Full deployment and operations: [Centralized Deployment](../deployment/centralized.md)
-- UI operations: [Web Observability](../operations/web-observability.md)
-- Package docs: [Installation](../package/installation.md), [Usage](../package/usage.md)

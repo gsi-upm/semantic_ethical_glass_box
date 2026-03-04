@@ -13,7 +13,7 @@ The API provides endpoints for:
 ## Documentation
 
 For more detailed documentation, please visit the official ReadTheDocs page:
-<https://segb.readthedocs.io>
+<https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/>
 
 ## Developed by
 

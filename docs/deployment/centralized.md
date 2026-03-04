@@ -9,6 +9,7 @@ Deploy and operate the centralized SEGB stack in Docker: backend API, Virtuoso, 
 - Docker Engine + Docker Compose v2
 - Free host ports: `5000`, `8080`, `8890`, `1111`
 - Python 3.10+ (only for simulation scripts)
+- Run commands from repository root (`semantic_ethical_glass_box/`)
 
 ## Authentication (optional)
 
@@ -38,6 +39,12 @@ Set required value:
 ```env
 VIRTUOSO_PASSWORD=change-this-password
 ```
+
+Important:
+
+- This sets the Virtuoso DBA password when the `virtuoso_data` volume is created for the first time.
+- If you change `VIRTUOSO_PASSWORD` later and keep the same volume, Virtuoso keeps the old password.
+- To apply a new password, recreate the volume (destructive): `docker compose -f docker-compose.yaml down -v`.
 
 Optional secure mode:
 
@@ -86,7 +93,7 @@ Expected:
 ### 5) Generate JWT (only if auth enabled)
 
 ```bash
-python3 -m pip install pyjwt
+python3 -m pip install pyjwt fastapi
 PYTHONPATH=apps/backend/src SECRET_KEY="<same_secret_as_env>" python3 -m tools.generate_jwt \
   --username demo_admin \
   --role admin \
@@ -94,45 +101,16 @@ PYTHONPATH=apps/backend/src SECRET_KEY="<same_secret_as_env>" python3 -m tools.g
   --json
 ```
 
-Expected: JSON output with `token`.
+Expected: JSON output with `token`.  
+Note: `SECRET_KEY` must be at least 32 characters for this tool.
 
-### 6) Prepare simulation environment
-
-```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -U pip
-./.venv/bin/python -m pip install -e packages/semantic_log_generator
-./.venv/bin/python -m pip install pydantic
-```
-
-### 7) Load report-ready dataset
-
-Auth disabled:
-
-```bash
-./.venv/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
-  --publish-url http://localhost:5000 \
-  --no-print-ttl
-```
-
-Auth enabled:
-
-```bash
-./.venv/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
-  --publish-url http://localhost:5000 \
-  --token "<admin_jwt>" \
-  --no-print-ttl
-```
-
-Warning: this clears the configured graph before inserting new triples.
-
-### 8) Inspect results
+### 6) Inspect services
 
 - UI (prod): `http://localhost:8080`
 - UI (dev): `http://localhost:5173`
 - OpenAPI: `http://localhost:5000/docs`
 
-### 9) Stop or reset
+### 7) Stop or reset
 
 Stop:
 
@@ -154,10 +132,13 @@ curl -X POST http://localhost:5000/ttl/delete_all \
   -d '{"user":"operator"}'
 ```
 
-If auth is enabled, add:
+If auth is enabled, use:
 
 ```bash
--H "Authorization: Bearer <admin_jwt>"
+curl -X POST http://localhost:5000/ttl/delete_all \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <admin_jwt>" \
+  -d '{"user":"operator"}'
 ```
 
 ## Validation
@@ -165,10 +146,16 @@ If auth is enabled, add:
 Run:
 
 ```bash
-curl -s http://localhost:5000/events | head -n 20
+curl -s http://localhost:5000/healthz/live
+curl -s http://localhost:5000/healthz/ready
+curl -s http://localhost:5000/auth/mode
 ```
 
-Expected: non-empty Turtle output.
+Expected:
+
+- `{"live": true}`
+- `{"ready": true, "virtuoso": true}`
+- `{"auth_enabled": false}` or `{"auth_enabled": true}`
 
 ## Troubleshooting
 
@@ -179,5 +166,4 @@ Expected: non-empty Turtle output.
 
 ## Next
 
-- UI operations: [Web Observability](../operations/web-observability.md)
-- Shared-context behavior: [Backend Shared Context](../backend/shared-context.md)
+- Continue to Step 2: [Install `semantic_log_generator`](../package/installation.md)

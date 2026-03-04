@@ -1,12 +1,12 @@
 # AMOR-SEGB Monorepo
 
-SEGB is a centralized semantic logging stack for robot interactions:
+SEGB is a semantic logging stack for robot interactions:
 
 - robots generate RDF logs with `semantic_log_generator`
-- backend ingests and stores triples in Virtuoso
+- backend ingests and stores triples in a Virtuoso Knowledge Graph
 - web UI helps inspect reports, graph structure, shared-context resolution, and backend server logs
 
-This repository contains the centralized SEGB stack (backend, frontend, logger package, docs, tests).
+This repository contains the SEGB stack (backend, frontend, logger package, docs, tests).
 
 ## Repository Structure (Quick View)
 
@@ -30,7 +30,6 @@ This repository contains the centralized SEGB stack (backend, frontend, logger p
 Notes:
 
 - `tests/` is reserved for cross-project checks; project-specific tests live with each project.
-- External robot runtime workspaces are local-only and are not part of the versioned source tree.
 
 ## Quick Start (Full Flow)
 
@@ -58,10 +57,10 @@ docker compose -f docker-compose.yaml up -d
 ### 2) Create a Python environment for simulations (one-time)
 
 ```bash
-python3 -m venv .venv
-./.venv/bin/python -m pip install -U pip
-./.venv/bin/python -m pip install -e packages/semantic_log_generator
-./.venv/bin/python -m pip install pydantic
+python3 -m venv .segb_env
+./.segb_env/bin/python -m pip install -U pip
+./.segb_env/bin/python -m pip install -e packages/semantic_log_generator
+./.segb_env/bin/python -m pip install pydantic
 ```
 
 SEGB supports Python 3.10, 3.11, and 3.12 (3.10+ recommended for ROS2 compatibility).
@@ -73,7 +72,7 @@ If you need to pin an interpreter, replace `python3` with `python3.10`, `python3
 ⚠️ This demo loader clears the configured graph before inserting new triples.
 
 ```bash
-./.venv/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
+./.segb_env/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
   --publish-url http://localhost:5000 \
   --no-print-ttl
 ```
@@ -101,14 +100,8 @@ For the full use-case matrix and commands, see [`examples/simulations/README.md`
 
 ## Detailed Documentation
 
-Detailed deployment, package usage, web usage, and internal TTL generation docs are available at:
+Detailed deployment, package usage, web usage, and tutorials are available at:
 
-- `https://segb.readthedocs.io/en/latest/`
-- Local docs entry point: [`docs/index.md`](docs/index.md)
-
-To serve docs locally:
-
-```bash
-./.venv/bin/python -m pip install -r docs/requirements.txt
-./.venv/bin/mkdocs serve
-```
+- Read the Docs: [semantic-ethical-black-box-segb.readthedocs.io/en/stable](https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/)
+- Local docs entry point: [docs/index.md](docs/index.md)
+- Notebook format tutorials (alternative to markdown guides): [`examples/notebooks`](examples/notebooks)

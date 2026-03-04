@@ -19,7 +19,5 @@ nav:
       - Web Observability: operations/web-observability.md
   - Backend:
       - Shared Context: backend/shared-context.md
-  - Internals:
-      - TTL Generation Pipeline: internals/ttl-generation.md
   - Reference:
       - Monorepo Structure: reference/monorepo-structure.md

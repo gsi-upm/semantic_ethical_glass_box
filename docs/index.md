@@ -12,13 +12,14 @@ SEGB documentation is organized in one linear path so you can run the stack firs
 
 ## Additional Guides
 
+Standalone guides (outside the linear recommended path):
+
 - [Quickstart](getting-started/quickstart.md)
 - [Web Observability](operations/web-observability.md)
 
-## Backend and Internals
+## Backend
 
 - [Shared Context Resolution](backend/shared-context.md)
-- [TTL Generation Pipeline](internals/ttl-generation.md)
 
 ## Reference
 

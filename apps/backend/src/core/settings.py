@@ -99,7 +99,10 @@ def load_api_info(path: str) -> dict:
 
 
 def load_api_description(path: str) -> str:
-    fallback = "Semantic Ethical Glass Box (SEGB) API. See <https://segb.readthedocs.io/en/latest/>."
+    fallback = (
+        "Semantic Ethical Glass Box (SEGB) API. "
+        "See <https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/>."
+    )
     file_path = Path(path)
     if not file_path.exists():
         return fallback

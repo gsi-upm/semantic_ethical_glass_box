@@ -44,8 +44,3 @@ You should be able to answer these quickly:
 
 - Unsure where to start: read repository `README.md`, then [Centralized Deployment](../deployment/centralized.md).
 - Looking for tests of a component: check the component-local `tests` directory first.
-
-## Next
-
-- Deployment workflow: [Centralized Deployment](../deployment/centralized.md)
-- Runtime observability: [Web Observability](../operations/web-observability.md)

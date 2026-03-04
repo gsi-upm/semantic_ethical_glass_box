@@ -4,7 +4,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.6.12 /uv /uvx /bin/
 LABEL org.opencontainers.image.source=https://github.com/gsi-upm/amor-segb
 LABEL org.opencontainers.image.description="AMOR-SEGB server"
 LABEL org.opencontainers.image.authors="Grupo de Sistemas Inteligentes - Universidad Politécnica de Madrid"
-LABEL org.opencontainers.image.documentation="https://amor-segb.readthedocs.io/"
+LABEL org.opencontainers.image.documentation="https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/"
 LABEL org.opencontainers.image.licenses=Apache-2.0
 
 EXPOSE 5000

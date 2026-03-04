@@ -32,7 +32,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/gsi-upm/semantic_ethical_glass_box"
 Repository = "https://github.com/gsi-upm/semantic_ethical_glass_box"
-Documentation = "https://segb.readthedocs.io/en/latest/" 
+Documentation = "https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/" 
 Issues = "https://github.com/gsi-upm/semantic_ethical_glass_box/issues"
 Changelog = "https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/packages/semantic_log_generator/CHANGELOG.md"
 

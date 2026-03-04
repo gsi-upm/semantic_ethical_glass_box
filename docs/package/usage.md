@@ -18,6 +18,7 @@ Create `first_log.py`:
 
 ```python
 from datetime import datetime, timezone
+import os
 
 from semantic_log_generator import ActivityKind, SEGBPublisher, SemanticSEGBLogger
 
@@ -46,7 +47,7 @@ ttl_text = logger.serialize(format="turtle")
 
 publisher = SEGBPublisher(
     base_url="http://localhost:5000",
-    token=None,  # replace with JWT string if auth is enabled
+    token=os.getenv("SEGB_API_TOKEN"),  # set only when auth is enabled
     default_user="demo_robot",
 )
 publisher.publish_turtle(ttl_text)
@@ -61,6 +62,12 @@ python first_log.py
 ```
 
 Expected: output like `Log posted. Triples: <number>`.
+
+If auth is enabled:
+
+```bash
+SEGB_API_TOKEN="<logger_or_admin_jwt>" python first_log.py
+```
 
 ### 3) Verify in backend
 
@@ -79,11 +86,35 @@ curl -s http://localhost:5000/events \
 
 Expected: Turtle output containing your `demo_robot` resources.
 
+### 4) Verify in UI
+
+Open:
+
+- Reports: `http://localhost:8080/reports`
+- KG Graph: `http://localhost:8080/kg-graph`
+
+If auth is enabled, first open `http://localhost:8080/session` and paste a valid token.  
+Detailed UI operation guide: [Web Observability](../operations/web-observability.md).
+
+Expected:
+
+- Reports page shows non-empty charts/cards.
+- KG Graph page shows nodes and edges generated from your log.
+
+Reports reference screenshot:
+
+![SEGB Reports](../assets/screenshots/ui-reports.png)
+
+KG Graph reference screenshot:
+
+![SEGB KG Graph](../assets/screenshots/ui-kg-graph.png)
+
 ## Validation
 
 - Script runs without exceptions.
 - `POST /ttl` succeeds.
 - `GET /events` returns non-empty Turtle including new entities.
+- UI pages `/reports` and `/kg-graph` show generated data.
 
 ## Troubleshooting
 
@@ -93,5 +124,4 @@ Expected: Turtle output containing your `demo_robot` resources.
 
 ## Next
 
-- Understand the core platform capabilities with minimal code: [Learn Main SEGB Features (Simple)](../getting-started/segb-features.md)
-- UI operation details: [Web Observability](../operations/web-observability.md)
+- Continue to Step 4: [Learn Main SEGB Features (Simple)](../getting-started/segb-features.md)

@@ -8,10 +8,25 @@ Install `semantic_log_generator` in a Python environment used by robot or simula
 
 - Python `>=3.10,<3.13`
 - `pip`
+- If you use editable install from source, run commands from repository root (`semantic_ethical_glass_box/`)
 
 ## Steps
 
-### 1) Choose installation source
+### 1) Recommended: install from this repository checkout
+
+```bash
+python -m pip install -e packages/semantic_log_generator
+```
+
+### 2) Validate installation
+
+```bash
+python -c "from semantic_log_generator import SemanticSEGBLogger; print('ok')"
+```
+
+Expected: `ok`.
+
+### 3) Alternative installation sources (only if needed)
 
 PyPI (when available):
 
@@ -28,28 +43,16 @@ python -m pip install \
   "semantic-log-generator>=1.0.0,<2.0.0"
 ```
 
-GitHub monorepo subdirectory:
+GitHub source (specific branch/tag/commit):
 
 ```bash
-python -m pip install "git+https://github.com/<owner>/<repo>.git@<tag_or_commit>#subdirectory=packages/semantic_log_generator"
+python -m pip install "git+https://github.com/gsi-upm/semantic_ethical_glass_box.git@main#subdirectory=packages/semantic_log_generator"
 ```
-
-### 2) Validate installation
-
-```bash
-python -c "from semantic_log_generator import SemanticSEGBLogger; print('ok')"
-```
-
-Expected: `ok`.
 
 ## Validation
 
-Confirm package import and runtime dependencies are available.
-
-Main runtime dependencies:
-
-- `rdflib`
-- `requests`
+- Package import works.
+- Runtime dependencies (`rdflib`, `requests`) are installed automatically by `pip`.
 
 ## Troubleshooting
 
@@ -59,5 +62,4 @@ Main runtime dependencies:
 
 ## Next
 
-- API usage patterns: [Usage](usage.md)
-- End-to-end deployment: [Centralized Deployment](../deployment/centralized.md)
+- Continue to Step 3: [Basic Use: Post Your First Log to SEGB](usage.md)
