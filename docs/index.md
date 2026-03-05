@@ -7,8 +7,7 @@ SEGB documentation is organized in one linear path so you can run the stack firs
 1. [Centralized Deployment (Backend + Frontend)](deployment/centralized.md)
 2. [Install `semantic_log_generator`](package/installation.md)
 3. [Basic Use: Post Your First Log to SEGB](package/usage.md)
-4. [Learn Main SEGB Features (Simple)](getting-started/segb-features.md)
-5. [Real Use Case with Robot Simulator (ROS4HRI)](package/ros4hri-integration.md)
+4. [Real Use Case with Robot Simulator (ROS4HRI)](package/ros4hri-integration.md)
 
 ## Additional Guides
 
@@ -16,6 +15,7 @@ Standalone guides (outside the linear recommended path):
 
 - [Quickstart](getting-started/quickstart.md)
 - [Web Observability](operations/web-observability.md)
+- [Validate Core SEGB Features (Optional Checklist)](getting-started/segb-features.md)
 
 ## Backend
 
@@ -24,10 +24,3 @@ Standalone guides (outside the linear recommended path):
 ## Reference
 
 - [Monorepo Structure](reference/monorepo-structure.md)
-
-## Local Docs Preview
-
-```bash
-python -m pip install -r docs/requirements.txt
-mkdocs serve
-```

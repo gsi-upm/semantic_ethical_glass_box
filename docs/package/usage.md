@@ -66,10 +66,14 @@ Expected: output like `Log posted. Triples: <number>`.
 If auth is enabled:
 
 ```bash
-SEGB_API_TOKEN="<logger_or_admin_jwt>" python first_log.py
+SEGB_API_TOKEN="<logger_or_admin_jwt>"
 ```
 
-### 3) Verify in backend
+```bash
+python first_log.py
+```
+
+### 3) Verify logs are inserted in Backend
 
 If auth is disabled:
 
@@ -124,4 +128,5 @@ KG Graph reference screenshot:
 
 ## Next
 
-- Continue to Step 4: [Learn Main SEGB Features (Simple)](../getting-started/segb-features.md)
+- Continue with full integration: [Real Use Case with Robot Simulator](../package/ros4hri-integration.md)
+- Optional verification checklist: [Validate Core SEGB Features](../getting-started/segb-features.md)

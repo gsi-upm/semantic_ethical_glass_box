@@ -12,21 +12,13 @@ Install `semantic_log_generator` in a Python environment used by robot or simula
 
 ## Steps
 
-### 1) Recommended: install from this repository checkout
+### 1) Installation
+
+From this repository checkout
 
 ```bash
 python -m pip install -e packages/semantic_log_generator
 ```
-
-### 2) Validate installation
-
-```bash
-python -c "from semantic_log_generator import SemanticSEGBLogger; print('ok')"
-```
-
-Expected: `ok`.
-
-### 3) Alternative installation sources (only if needed)
 
 PyPI (when available):
 
@@ -43,16 +35,20 @@ python -m pip install \
   "semantic-log-generator>=1.0.0,<2.0.0"
 ```
 
-GitHub source (specific branch/tag/commit):
+GitHub source:
 
 ```bash
 python -m pip install "git+https://github.com/gsi-upm/semantic_ethical_glass_box.git@main#subdirectory=packages/semantic_log_generator"
 ```
 
-## Validation
+### 2) Validation
 
-- Package import works.
-- Runtime dependencies (`rdflib`, `requests`) are installed automatically by `pip`.
+```bash
+python -c "from semantic_log_generator import SemanticSEGBLogger; print('ok')"
+```
+
+Expected: `ok`.
+
 
 ## Troubleshooting
 

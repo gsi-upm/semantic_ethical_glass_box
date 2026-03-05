@@ -29,11 +29,14 @@ JWT generation (admin example):
 
 ```bash
 python3 -m pip install pyjwt fastapi
-PYTHONPATH=apps/backend/src SECRET_KEY="<32+ char secret>" python3 -m tools.generate_jwt \
-  --username demo_admin \
-  --role admin \
-  --expires-in 3600 \
-  --json
+(
+  cd apps/backend/src
+  SECRET_KEY="<32+ char secret>" python3 -m tools.generate_jwt \
+    --username demo_admin \
+    --role admin \
+    --expires-in 3600 \
+    --json
+)
 ```
 
 Use the same `SECRET_KEY` value configured in `.env`.  

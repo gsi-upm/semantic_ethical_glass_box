@@ -210,11 +210,14 @@ Expected: `{"ready": true, "virtuoso": true}`.
 If auth is enabled, generate a token:
 
 ```bash
-PYTHONPATH=apps/backend/src SECRET_KEY="<same_secret_as_env>" python3 -m tools.generate_jwt \
-  --username ros_operator \
-  --role admin \
-  --expires-in 3600 \
-  --json
+(
+  cd apps/backend/src
+  SECRET_KEY="<same_secret_as_env>" python3 -m tools.generate_jwt \
+    --username ros_operator \
+    --role admin \
+    --expires-in 3600 \
+    --json
+)
 ```
 
 ### 3) Install `semantic_log_generator` in ROS runtime
