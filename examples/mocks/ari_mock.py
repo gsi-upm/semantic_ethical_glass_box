@@ -182,6 +182,7 @@ def _log_support_decision(
         generated_by_activity=decision_activity_uri,
         message_types=[ORO.ResponseMessage],
         previous_message=observation_message_uri,
+        sender=logger.robot_uri,
     )
     return decision_activity_uri, response_message_uri
 
@@ -253,6 +254,7 @@ def ari_handle_human_utterance(
         generated_by_activity=listening_activity_uri,
         message_types=[ORO.InitialMessage],
         language="en",
+        sender=human_uri,
     )
     logger.link_observation_to_shared_event(observation_message_uri, shared_event_uri, confidence=0.95)
 

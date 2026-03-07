@@ -126,6 +126,7 @@ def run_shared_context_auto_match_use_case(
         generated_by_activity=ari_listening,
         message_types=[ORO.InitialMessage],
         language="en",
+        sender=human_uri,
     )
     ari_logger.link_observation_to_shared_event(ari_message, shared_context_uri, confidence=0.96)
 
@@ -142,6 +143,7 @@ def run_shared_context_auto_match_use_case(
         generated_by_activity=tiago_listening,
         message_types=[ORO.InitialMessage],
         language="en",
+        sender=human_uri,
     )
     tiago_logger.link_observation_to_shared_event(tiago_message, shared_context_uri, confidence=0.94)
 

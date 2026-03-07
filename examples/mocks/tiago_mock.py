@@ -96,6 +96,7 @@ def tiago_handle_human_utterance(
         generated_by_activity=listening_activity_uri,
         message_types=[ORO.InitialMessage],
         language="en",
+        sender=human_uri,
     )
     logger.link_observation_to_shared_event(observation_message_uri, shared_event_uri, confidence=0.90)
 

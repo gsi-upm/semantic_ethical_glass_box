@@ -359,6 +359,11 @@ def on_intent(self, msg: Intent) -> None:
 
 Why: links input, decision, response, and robot state in one traceable semantic chain.
 
+Important: when logging messages, set explicit sender attribution:
+
+- human input message: `sender=human_uri`
+- robot output message: `sender=self.segb.robot_uri`
+
 Details: [Basic Use](usage.md), [Shared Context Resolution](../backend/shared-context.md).
 
 #### 4.5 Add semantic logging in `run`

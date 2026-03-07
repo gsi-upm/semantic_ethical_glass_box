@@ -49,6 +49,7 @@
           <span>{{ item.label }}</span>
         </div>
       </div>
+      <p class="note">Humans and Robots charts are grouped by target entity. Report 4 uses intensity threshold only.</p>
       <div v-if="humanEmotionCharts.length === 0 && robotEmotionCharts.length === 0" class="empty">No emotion timeline data available.</div>
       <div v-else class="emotion-spaces">
         <section class="emotion-space">
@@ -72,7 +73,7 @@
         </section>
 
         <section class="emotion-space">
-          <h4 class="section-title">Robots</h4>
+          <h4 class="section-title">Robot targets</h4>
           <div class="emotion-controls">
             <label class="select-label" for="robot-select">Select a robot</label>
             <select id="robot-select" v-model="selectedRobotChartTitle" class="select-input">
@@ -106,13 +107,13 @@
       </BaseCard>
 
       <BaseCard title="Report 5: Extreme Emotion Distribution">
-        <template v-if="extremeBars.length > 1">
+        <template v-if="extremeBars.length > 0">
           <SimpleBarChart title="Extreme emotion counts" :bars="extremeBars" />
         </template>
         <StatusBanner
           v-else
           tone="warning"
-          message="Not enough emotion categories for a meaningful distribution chart."
+          message="No extreme emotions available for distribution."
         />
       </BaseCard>
     </div>

@@ -92,6 +92,7 @@ def _log_local_robot_observations(
     *,
     ari_logger,
     tiago_logger,
+    human_uri: URIRef,
     run_nonce: str,
     observed_at: datetime,
     base_text: str,
@@ -111,6 +112,7 @@ def _log_local_robot_observations(
         generated_by_activity=ari_activity,
         message_types=[ORO.InitialMessage],
         language="en",
+        sender=human_uri,
     )
     ari_logger.link_observation_to_shared_event(ari_message, active_context_uri, confidence=0.95)
 
@@ -127,6 +129,7 @@ def _log_local_robot_observations(
         generated_by_activity=tiago_activity,
         message_types=[ORO.InitialMessage],
         language="en",
+        sender=human_uri,
     )
     tiago_logger.link_observation_to_shared_event(tiago_message, ambiguous_context_uri, confidence=0.89)
 
@@ -216,6 +219,7 @@ def run_shared_context_ambiguous_review_use_case(
     _log_local_robot_observations(
         ari_logger=ari_logger,
         tiago_logger=tiago_logger,
+        human_uri=human_uri,
         run_nonce=run_nonce,
         observed_at=observed_at,
         base_text=base_text,

@@ -114,6 +114,25 @@ class TestSemanticSEGBLogger(unittest.TestCase):
         self.assertIn((message_uri, SCHEMA.text, Literal("hola", lang="es")), graph)
         self.assertEqual(len(list(graph.objects(message_uri, ORO.hasText))), 0)
 
+    def test_log_message_can_set_sender_and_attribution(self) -> None:
+        human = self.logger.register_human("maria_sender", first_name="Maria")
+        listening = self.logger.log_activity(
+            activity_id="listening_sender",
+            activity_kind=ActivityKind.LISTENING,
+            started_at=datetime.now(timezone.utc),
+        )
+        message_uri = self.logger.log_message(
+            "hola",
+            message_id="schema_sender_shape",
+            language="es",
+            generated_by_activity=listening,
+            sender=human,
+        )
+        graph = self.logger.graph
+        self.assertIn((message_uri, SCHEMA.sender, human), graph)
+        self.assertIn((message_uri, PROV.wasAttributedTo, human), graph)
+        self.assertIn((message_uri, PROV.wasGeneratedBy, listening), graph)
+
     def test_activity_single_trigger_activity_is_logged(self) -> None:
         source_activity = self.logger.log_activity(
             activity_id="source_activity",

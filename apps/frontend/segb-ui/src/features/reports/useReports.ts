@@ -75,22 +75,20 @@ function resolveEmotionTrigger(row: ReportEmotionSample): string {
 }
 
 function normalizeRatio(raw: string | null | undefined): number | null {
-  const numeric = toNumber(raw)
-  if (numeric === null) {
+  const percent = normalizePercent(raw)
+  if (percent === null) {
     return null
   }
-  if (numeric > 1 && numeric <= 100) {
-    return numeric / 100
-  }
-  return numeric
+  return percent / 100
 }
 
 function normalizePercent(raw: string | null | undefined): number | null {
-  const ratio = normalizeRatio(raw)
-  if (ratio === null) {
+  const numeric = toNumber(raw)
+  if (numeric === null || !Number.isFinite(numeric)) {
     return null
   }
-  return ratio * 100
+  const percent = numeric >= 0 && numeric <= 1 ? numeric * 100 : numeric
+  return Math.min(Math.max(percent, 0), 100)
 }
 
 function parseTimestampMs(raw: string): number | null {
@@ -102,6 +100,33 @@ function parseTimestampMs(raw: string): number | null {
     return null
   }
   return timestamp
+}
+
+function compareTimestampAsc(leftRaw: string, rightRaw: string): number {
+  const leftTimestamp = parseTimestampMs(leftRaw)
+  const rightTimestamp = parseTimestampMs(rightRaw)
+  if (leftTimestamp !== null && rightTimestamp !== null && leftTimestamp !== rightTimestamp) {
+    return leftTimestamp - rightTimestamp
+  }
+  if (leftTimestamp !== null && rightTimestamp === null) {
+    return -1
+  }
+  if (leftTimestamp === null && rightTimestamp !== null) {
+    return 1
+  }
+  return leftRaw.localeCompare(rightRaw)
+}
+
+function normalizeActivityTypes(raw: string | null | undefined): string {
+  const normalizedTypes = Array.from(
+    new Set(
+      asLines(raw ?? '')
+        .flatMap((value) => value.split(' | '))
+        .map((value) => compactUri(value))
+        .filter((value) => value.length > 0),
+    ),
+  )
+  return normalizedTypes.join(', ')
 }
 
 function normalizeSenderRole(raw: string): 'human' | 'robot' | 'unknown' {
@@ -129,13 +154,13 @@ function isEmotionTargetHuman(row: ReportEmotionSample): boolean {
   return targetEntity.includes('/human_') || targetEntity.includes('#human_')
 }
 
-function isEmotionActorRobot(row: ReportEmotionSample): boolean {
-  const actorType = normalizeEntityType(row.performedByType)
-  if (actorType === 'robot') {
+function isEmotionTargetRobot(row: ReportEmotionSample): boolean {
+  const targetType = normalizeEntityType(row.targetType)
+  if (targetType === 'robot') {
     return true
   }
-  const performedBy = row.performedBy.trim().toLowerCase()
-  return performedBy.includes('/robot_') || performedBy.includes('#robot_') || performedBy.includes('/robots/')
+  const targetEntity = row.targetEntity.trim().toLowerCase()
+  return targetEntity.includes('/robot_') || targetEntity.includes('#robot_')
 }
 
 function inferSenderRole(rawRole: string, rawMessageType: string, rawPerformedByRole: string): 'human' | 'robot' | 'unknown' {
@@ -187,7 +212,7 @@ export function useReports() {
   const conversationMessages = ref<ReportConversationMessage[]>([])
   const conversationSessions = ref<ReportConversationSession[]>([])
 
-  function groupEmotionTimelineByDimension(dimension: 'human-target' | 'robot-actor') {
+  function groupEmotionTimelineByDimension(dimension: 'human-target' | 'robot-target') {
     const groupedByEntity = new Map<
       string,
       {
@@ -210,7 +235,7 @@ export function useReports() {
       if (dimension === 'human-target' && !isEmotionTargetHuman(row)) {
         continue
       }
-      if (dimension === 'robot-actor' && !isEmotionActorRobot(row)) {
+      if (dimension === 'robot-target' && !isEmotionTargetRobot(row)) {
         continue
       }
 
@@ -223,12 +248,12 @@ export function useReports() {
       const entityKey =
         dimension === 'human-target'
           ? row.targetEntity || row.targetLabel || row.sourceActivity || 'unknown_target'
-          : row.performedBy || row.performedByLabel || row.sourceActivity || 'unknown_robot'
+          : row.targetEntity || row.targetLabel || row.sourceActivity || 'unknown_robot'
       const baseLabel =
         (
           dimension === 'human-target'
             ? row.targetLabel || compactUri(entityKey)
-            : row.performedByLabel || compactUri(entityKey)
+            : row.targetLabel || compactUri(entityKey)
         ).trim() || compactUri(entityKey)
 
       if (!labelToEntities.has(baseLabel)) {
@@ -248,7 +273,7 @@ export function useReports() {
         y: intensity,
         tag: normalizeEmotionLabel(row.category),
         subject: baseLabel,
-        activity: dimension === 'human-target' ? `Emotion analysis for ${baseLabel}` : `Emotion analysis by ${baseLabel}`,
+        activity: `Emotion analysis for ${baseLabel}`,
         trigger: resolveEmotionTrigger(row),
         confidence,
         sortKey: row.t,
@@ -277,7 +302,7 @@ export function useReports() {
     for (const [entityKey, group] of ordered) {
       const duplicatedLabel = (labelToEntities.get(group.label)?.size ?? 0) > 1
       const participantBase = duplicatedLabel ? `${group.label} (${compactUri(entityKey)})` : group.label
-      const icon = dimension === 'robot-actor' ? '🤖' : '🧑'
+      const icon = dimension === 'robot-target' ? '🤖' : '🧑'
       const participant = decorateParticipant(participantBase, icon) || participantBase
       grouped.set(participant, group.points)
     }
@@ -286,7 +311,7 @@ export function useReports() {
   }
 
   const emotionTimelineByHumanParticipant = computed(() => groupEmotionTimelineByDimension('human-target'))
-  const emotionTimelineByRobotParticipant = computed(() => groupEmotionTimelineByDimension('robot-actor'))
+  const emotionTimelineByRobotParticipant = computed(() => groupEmotionTimelineByDimension('robot-target'))
 
   const maxEmotionIntensity = computed<number | null>(() => {
     let maxValue: number | null = null
@@ -304,6 +329,9 @@ export function useReports() {
     const counters = new Map<string, number>()
     for (const row of extremeEmotion.value) {
       const emotion = normalizeEmotionLabel(row.category)
+      if (!emotion) {
+        continue
+      }
       counters.set(emotion, (counters.get(emotion) ?? 0) + 1)
     }
     return Array.from(counters.entries())
@@ -367,18 +395,37 @@ export function useReports() {
         }))
         .filter((row) => row.participant.length > 0)
 
-      mlUsage.value = mlRows.map((row) => ({
-        activity: compactUri(row.activity ?? ''),
-        activityType: compactUri(row.activityType ?? ''),
-        usedBy: row.usedByName ?? compactUri(row.usedBy ?? ''),
-        usedAt: formatUtcTimestamp(row.startedAt ?? ''),
-        model: compactUri(row.model ?? ''),
-        modelLabel: row.modelLabel ?? '',
-        version: row.version ?? '',
-        dataset: compactUri(row.dataset ?? ''),
-        datasetLabel: row.datasetLabel ?? '',
-        score: formatRatioAsPercent(row.score ?? ''),
-      }))
+      const mappedMlUsage = mlRows.map((row) => {
+        const startedAtRaw = row.startedAt ?? ''
+        const activityType = normalizeActivityTypes(row.activityType) || 'Activity'
+        return {
+          startedAtRaw,
+          row: {
+            activity: compactUri(row.activity ?? ''),
+            activityType,
+            usedBy: row.usedByName ?? compactUri(row.usedBy ?? ''),
+            usedAt: formatUtcTimestamp(startedAtRaw),
+            model: compactUri(row.model ?? ''),
+            modelLabel: row.modelLabel ?? '',
+            version: row.version ?? '',
+            dataset: compactUri(row.dataset ?? ''),
+            datasetLabel: row.datasetLabel ?? '',
+            score: formatRatioAsPercent(row.score ?? ''),
+          } satisfies ReportMlUsage,
+        }
+      })
+      mappedMlUsage.sort((left, right) => {
+        const timeOrder = compareTimestampAsc(left.startedAtRaw, right.startedAtRaw)
+        if (timeOrder !== 0) {
+          return timeOrder
+        }
+        const activityOrder = left.row.activity.localeCompare(right.row.activity)
+        if (activityOrder !== 0) {
+          return activityOrder
+        }
+        return left.row.model.localeCompare(right.row.model)
+      })
+      mlUsage.value = mappedMlUsage.map((entry) => entry.row)
 
       emotionTimeline.value = emotionRows.map((row) => ({
         t: row.t ?? '',
@@ -400,32 +447,50 @@ export function useReports() {
         confidence: row.confidence ?? '',
       }))
 
-      extremeEmotion.value = extremeRows.map((row) => ({
-        t: row.t ?? '',
-        sourceActivity: compactUri(row.sourceActivity ?? ''),
-        sourceActivityLabel: '',
-        performedBy: '',
-        performedByLabel: '',
-        performedByType: '',
-        triggerActivity: '',
-        triggerActivityLabel: '',
-        triggerEntity: '',
-        triggerEntityLabel: '',
-        triggerMessageText: '',
-        targetEntity: firstPipeValue(row.targetEntity ?? ''),
-        targetType: firstPipeValue(row.targetType ?? ''),
-        targetLabel: firstPipeValue(row.targetLabel ?? '') || compactUri(row.targetEntity ?? ''),
-        category: row.category ?? '',
-        intensity: row.intensity ?? '',
-        confidence: row.confidence ?? '',
-      }))
+      extremeEmotion.value = extremeRows
+        .map((row) => ({
+          t: row.t ?? '',
+          sourceActivity: compactUri(row.sourceActivity ?? ''),
+          sourceActivityLabel: '',
+          performedBy: '',
+          performedByLabel: '',
+          performedByType: '',
+          triggerActivity: '',
+          triggerActivityLabel: '',
+          triggerEntity: '',
+          triggerEntityLabel: '',
+          triggerMessageText: '',
+          targetEntity: firstPipeValue(row.targetEntity ?? ''),
+          targetType: firstPipeValue(row.targetType ?? ''),
+          targetLabel: firstPipeValue(row.targetLabel ?? '') || compactUri(row.targetEntity ?? ''),
+          category: row.category ?? '',
+          intensity: row.intensity ?? '',
+          confidence: row.confidence ?? '',
+        }))
+        .sort((left, right) => {
+          const timeOrder = compareTimestampAsc(right.t, left.t)
+          if (timeOrder !== 0) {
+            return timeOrder
+          }
+          const leftIntensity = normalizePercent(left.intensity) ?? -1
+          const rightIntensity = normalizePercent(right.intensity) ?? -1
+          return rightIntensity - leftIntensity
+        })
 
-      robotStates.value = stateRows.map((row) => ({
-        robot: row.robot ?? '',
-        robotName: row.robotName ?? compactUri(row.robot ?? ''),
-        t: row.t ?? '',
-        location: compactUri(row.location ?? ''),
-      }))
+      robotStates.value = stateRows
+        .map((row) => ({
+          robot: row.robot ?? '',
+          robotName: row.robotName ?? compactUri(row.robot ?? ''),
+          t: row.t ?? '',
+          location: compactUri(row.location ?? ''),
+        }))
+        .sort((left, right) => {
+          const timeOrder = compareTimestampAsc(left.t, right.t)
+          if (timeOrder !== 0) {
+            return timeOrder
+          }
+          return left.robotName.localeCompare(right.robotName)
+        })
 
       buildConversationMessages(conversationRows)
       buildConversationSessions()
@@ -453,7 +518,7 @@ export function useReports() {
 
     const summary: ReportDisplacementSummary[] = []
     for (const [robot, samples] of grouped.entries()) {
-      const ordered = [...samples].sort((a, b) => a.t.localeCompare(b.t))
+      const ordered = [...samples].sort((a, b) => compareTimestampAsc(a.t, b.t))
       const rawPath = ordered.map((row) => row.location)
       const transitionPath: string[] = []
       for (const location of rawPath) {

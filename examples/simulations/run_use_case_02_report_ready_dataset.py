@@ -163,6 +163,7 @@ def _log_conversation_sequence(
     )
     recovery = _log_recovery_dialogue(
         ari_logger=ari_logger,
+        human_uri=human_uri,
         cheer_request=cheer_request,
         anxiety=anxiety,
         asr_model=models.asr,
@@ -222,6 +223,7 @@ def _log_cheer_request_start(
         message_types=[ORO.InitialMessage],
         language="en",
         previous_message=base_result.ari_response_uri,
+        sender=human_uri,
     )
     ari_logger.link_observation_to_shared_event(cheer_request_message, cheer_request_shared_event, confidence=0.95)
     return CheerRequestFlow(
@@ -255,6 +257,7 @@ def _log_exam_news_and_anxiety(
         generated_by_activity=exam_news_activity,
         message_types=[ORO.ResponseMessage],
         previous_message=cheer_request.heard_message_uri,
+        sender=ari_logger.robot_uri,
     )
 
     anxiety_face_observation = ari_logger.log_observation(
@@ -279,12 +282,24 @@ def _log_exam_news_and_anxiety(
     )
     ari_logger.log_emotion_annotation(
         source_activity=anxiety_activity,
-        targets=[human_uri, ari_logger.robot_uri],
+        targets=[human_uri],
         emotions=[
             EmotionScore(
                 category=EMOML.big6_fear,
                 intensity=0.90,
                 confidence=0.95,
+            ),
+        ],
+        emotion_model=EMOML.big6,
+    )
+    ari_logger.log_emotion_annotation(
+        source_activity=anxiety_activity,
+        targets=[ari_logger.robot_uri],
+        emotions=[
+            EmotionScore(
+                category=EMOML.big6_fear,
+                intensity=0.46,
+                confidence=0.82,
             ),
         ],
         emotion_model=EMOML.big6,
@@ -299,6 +314,7 @@ def _log_exam_news_and_anxiety(
 def _log_recovery_dialogue(
     *,
     ari_logger: SemanticSEGBLogger,
+    human_uri: URIRef,
     cheer_request: CheerRequestFlow,
     anxiety: AnxietyFlow,
     asr_model: URIRef,
@@ -319,6 +335,7 @@ def _log_recovery_dialogue(
         generated_by_activity=apology_activity,
         message_types=[ORO.ResponseMessage],
         previous_message=anxiety.exam_news_message_uri,
+        sender=ari_logger.robot_uri,
     )
 
     animal_news_activity = ari_logger.log_activity(
@@ -337,6 +354,7 @@ def _log_recovery_dialogue(
         generated_by_activity=animal_news_activity,
         message_types=[ORO.ResponseMessage],
         previous_message=apology_message,
+        sender=ari_logger.robot_uri,
     )
 
     gratitude_listening_activity = ari_logger.log_activity(
@@ -357,6 +375,7 @@ def _log_recovery_dialogue(
         message_types=[ORO.InitialMessage],
         language="en",
         previous_message=animal_news_message,
+        sender=human_uri,
     )
     ari_logger.link_observation_to_shared_event(gratitude_message, cheer_request.shared_event_uri, confidence=0.97)
     return RecoveryDialogueFlow(gratitude_listening_activity_uri=gratitude_listening_activity)
@@ -392,12 +411,24 @@ def _log_recovery_emotion(
     )
     ari_logger.log_emotion_annotation(
         source_activity=very_happy_activity,
-        targets=[human_uri, ari_logger.robot_uri],
+        targets=[human_uri],
         emotions=[
             EmotionScore(
                 category=EMOML.big6_happiness,
                 intensity=0.98,
                 confidence=0.96,
+            ),
+        ],
+        emotion_model=EMOML.big6,
+    )
+    ari_logger.log_emotion_annotation(
+        source_activity=very_happy_activity,
+        targets=[ari_logger.robot_uri],
+        emotions=[
+            EmotionScore(
+                category=EMOML.big6_happiness,
+                intensity=0.67,
+                confidence=0.87,
             ),
         ],
         emotion_model=EMOML.big6,

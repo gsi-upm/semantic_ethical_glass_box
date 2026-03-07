@@ -172,7 +172,7 @@ function splitTickLabel(value: string): [string, string?] {
 function pointTooltipLines(point: LinePoint): string[] {
   const lines = [
     `Emotion: ${point.tag}`,
-    `Intensity: ${formatRatioAsPercent(point.y, 0)}`,
+    `Intensity (emotion magnitude): ${formatRatioAsPercent(point.y, 1)}`,
     `Timestamp: ${point.xLabel} UTC`,
   ]
   if (point.subject && point.subject.trim().length > 0) {
@@ -185,7 +185,7 @@ function pointTooltipLines(point: LinePoint): string[] {
     lines.push(`Analysis activity: ${point.activity}`)
   }
   if (typeof point.confidence === 'number') {
-    lines.push(`Confidence: ${formatRatioAsPercent(point.confidence, 0)}`)
+    lines.push(`Model confidence (classification certainty): ${formatRatioAsPercent(point.confidence, 1)}`)
   }
   return lines
 }

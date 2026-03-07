@@ -69,6 +69,10 @@ WHERE {
         }
         UNION
         {
+          ?activity segb:wasRequestedBy ?human .
+        }
+        UNION
+        {
           ?robot oro:belongsTo ?human .
         }
 
@@ -92,6 +96,10 @@ WHERE {
         }
         UNION
         {
+          ?activity segb:wasRequestedBy ?human .
+        }
+        UNION
+        {
           ?robot oro:belongsTo ?human .
         }
 
@@ -104,6 +112,10 @@ WHERE {
         {
           ?otherActivity schema:about ?otherSharedEvent .
           ?otherSharedEvent schema:about ?human .
+        }
+        UNION
+        {
+          ?otherActivity segb:wasRequestedBy ?human .
         }
         UNION
         {
@@ -129,13 +141,31 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX oro: <http://kb.openrobots.org#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
 
-SELECT ?activity ?activityType ?usedBy ?usedByName ?startedAt ?model ?modelLabel ?version ?dataset ?datasetLabel ?score
+SELECT
+  ?activity
+  (GROUP_CONCAT(DISTINCT ?activityTypeLabel; separator="__SEGB_LINE_BREAK__") AS ?activityType)
+  ?usedBy
+  ?usedByName
+  ?startedAt
+  ?model
+  ?modelLabel
+  ?version
+  ?dataset
+  ?datasetLabel
+  ?score
 WHERE {
   ?activity a segb:LoggedActivity ;
             segb:usedMLModel ?model ;
             segb:wasPerformedBy ?usedBy .
 
-  OPTIONAL { ?activity a ?activityType . FILTER(?activityType != segb:LoggedActivity) }
+  OPTIONAL {
+    ?activity a ?activityTypeCandidate .
+    FILTER(?activityTypeCandidate != segb:LoggedActivity)
+    FILTER(?activityTypeCandidate != prov:Activity)
+    OPTIONAL { ?activityTypeCandidate rdfs:label ?activityTypeCandidateLabel }
+    BIND(REPLACE(STR(?activityTypeCandidate), "^.*[/#]", "") AS ?activityTypeCandidateId)
+    BIND(COALESCE(STR(?activityTypeCandidateLabel), ?activityTypeCandidateId) AS ?activityTypeLabel)
+  }
   OPTIONAL { ?usedBy schema:name ?usedByNameRaw }
   BIND(REPLACE(STR(?usedBy), "^.*[/#]", "") AS ?usedById)
   BIND(COALESCE(?usedByNameRaw, ?usedById) AS ?usedByName)
@@ -158,6 +188,7 @@ WHERE {
     }
   }
 }
+GROUP BY ?activity ?usedBy ?usedByName ?startedAt ?model ?modelLabel ?version ?dataset ?datasetLabel ?score
 ORDER BY ?startedAt ?activity
 `,
 
@@ -196,12 +227,11 @@ WHERE {
     ?sourceActivity prov:generated ?emotionContainer .
     FILTER NOT EXISTS { ?sourceActivity segb:producedEntityResult ?emotionContainer }
   }
-  ?sharedEvent schema:about ?targetEntity .
 
   OPTIONAL { ?sharedEvent prov:generatedAtTime ?sharedObservedAt }
   OPTIONAL { ?sourceActivity prov:startedAtTime ?startedAt }
   OPTIONAL { ?sourceActivity prov:endedAtTime ?endedAt }
-  BIND(COALESCE(?sharedObservedAt, ?startedAt, ?endedAt) AS ?t)
+  BIND(COALESCE(?startedAt, ?endedAt, ?sharedObservedAt) AS ?t)
 
   ?emotionContainer onyx:hasEmotion ?emotion .
   ?emotion onyx:hasEmotionCategory ?category ;
@@ -268,12 +298,11 @@ WHERE {
     ?sourceActivity prov:generated ?emotionContainer .
     FILTER NOT EXISTS { ?sourceActivity segb:producedEntityResult ?emotionContainer }
   }
-  ?sharedEvent schema:about ?targetEntity .
 
   OPTIONAL { ?sharedEvent prov:generatedAtTime ?sharedObservedAt }
   OPTIONAL { ?sourceActivity prov:startedAtTime ?startedAt }
   OPTIONAL { ?sourceActivity prov:endedAtTime ?endedAt }
-  BIND(COALESCE(?sharedObservedAt, ?startedAt, ?endedAt) AS ?t)
+  BIND(COALESCE(?startedAt, ?endedAt, ?sharedObservedAt) AS ?t)
 
   ?emotionContainer onyx:hasEmotion ?emotion .
   ?emotion onyx:hasEmotionCategory ?category ;
@@ -327,6 +356,73 @@ SELECT
   ?senderRole
   ?performedByRole
 WHERE {
+  {
+    SELECT ?robot ?conversationHuman
+    WHERE {
+      ?pairMessage a schema:Message ;
+                   schema:text ?pairText ;
+                   prov:wasGeneratedBy ?pairActivity .
+
+      ?pairActivity a segb:LoggedActivity ;
+                    segb:wasPerformedBy ?robot .
+
+      OPTIONAL { ?pairMessage schema:sender ?pairSenderBySchema }
+      OPTIONAL { ?pairMessage prov:wasAttributedTo ?pairSenderByProv }
+      BIND(COALESCE(?pairSenderBySchema, ?pairSenderByProv) AS ?pairSender)
+
+      OPTIONAL {
+        ?pairActivity schema:about ?pairSharedEvent .
+        ?pairSharedEvent schema:about ?pairHumanByActivity .
+        ?pairHumanByActivity a oro:Human .
+      }
+      OPTIONAL {
+        ?pairMessage prov:specializationOf ?pairMessageSharedEvent .
+        ?pairMessageSharedEvent schema:about ?pairHumanByMessage .
+        ?pairHumanByMessage a oro:Human .
+      }
+      OPTIONAL {
+        ?pairSender a oro:Human .
+        BIND(?pairSender AS ?pairHumanBySenderHuman)
+      }
+      OPTIONAL {
+        ?pairSender a prov:Person .
+        BIND(?pairSender AS ?pairHumanBySenderPerson)
+      }
+      OPTIONAL {
+        ?robot oro:belongsTo ?pairHumanByOwnership .
+        ?pairHumanByOwnership a oro:Human .
+      }
+
+      BIND(
+        COALESCE(
+          ?pairHumanBySenderHuman,
+          ?pairHumanBySenderPerson,
+          ?pairHumanByMessage,
+          ?pairHumanByActivity,
+          ?pairHumanByOwnership
+        ) AS ?conversationHuman
+      )
+      FILTER(BOUND(?conversationHuman))
+
+      OPTIONAL { ?pairSender a oro:Human . BIND("human" AS ?pairSenderRoleBySenderHuman) }
+      OPTIONAL { ?pairSender a prov:Person . BIND("human" AS ?pairSenderRoleBySenderPerson) }
+      OPTIONAL { ?pairSender a oro:Robot . BIND("robot" AS ?pairSenderRoleBySenderRobot) }
+      BIND(
+        COALESCE(
+          ?pairSenderRoleBySenderHuman,
+          ?pairSenderRoleBySenderPerson,
+          ?pairSenderRoleBySenderRobot,
+          IF(BOUND(?pairHumanByMessage), "human", "robot")
+        ) AS ?pairSenderRole
+      )
+    }
+    GROUP BY ?robot ?conversationHuman
+    HAVING (
+      SUM(IF(?pairSenderRole = "human", 1, 0)) > 0 &&
+      SUM(IF(?pairSenderRole = "robot", 1, 0)) > 0
+    )
+  }
+
   ?message a schema:Message ;
            schema:text ?text ;
            prov:wasGeneratedBy ?activity .
@@ -342,6 +438,10 @@ WHERE {
   OPTIONAL { ?activity prov:endedAtTime ?endedAt }
   BIND(COALESCE(?startedAt, ?endedAt) AS ?t)
 
+  OPTIONAL { ?message schema:sender ?senderBySchema }
+  OPTIONAL { ?message prov:wasAttributedTo ?senderByProv }
+  BIND(COALESCE(?senderBySchema, ?senderByProv) AS ?sender)
+
   OPTIONAL {
     ?activity schema:about ?sharedEvent .
     ?sharedEvent schema:about ?humanByActivity .
@@ -353,21 +453,40 @@ WHERE {
     ?humanByMessage a oro:Human .
   }
   OPTIONAL {
+    ?sender a oro:Human .
+    BIND(?sender AS ?humanBySenderHuman)
+  }
+  OPTIONAL {
+    ?sender a prov:Person .
+    BIND(?sender AS ?humanBySenderPerson)
+  }
+  OPTIONAL {
     ?robot oro:belongsTo ?humanByOwnership .
     ?humanByOwnership a oro:Human .
   }
 
-  BIND(COALESCE(?humanByMessage, ?humanByActivity, ?humanByOwnership) AS ?human)
+  BIND(COALESCE(?humanBySenderHuman, ?humanBySenderPerson, ?humanByMessage, ?humanByActivity, ?humanByOwnership) AS ?human)
   OPTIONAL { ?human foaf:firstName ?humanName }
 
-  BIND(IF(BOUND(?humanByMessage), "human", "robot") AS ?senderRole)
-  BIND(IF(?senderRole = "human", "HumanMessage", "RobotMessage") AS ?messageType)
+  OPTIONAL { ?sender a oro:Human . BIND("human" AS ?senderRoleBySenderHuman) }
+  OPTIONAL { ?sender a prov:Person . BIND("human" AS ?senderRoleBySenderPerson) }
+  OPTIONAL { ?sender a oro:Robot . BIND("robot" AS ?senderRoleBySenderRobot) }
+  BIND(
+    COALESCE(
+      ?senderRoleBySenderHuman,
+      ?senderRoleBySenderPerson,
+      ?senderRoleBySenderRobot,
+      IF(BOUND(?humanByMessage), "human", "robot")
+    ) AS ?senderRole
+  )
+  BIND(IF(?senderRole = "human", "HumanMessage", IF(?senderRole = "robot", "RobotMessage", "Message")) AS ?messageType)
 
   BIND("robot" AS ?performedByRole)
   BIND(IF(BOUND(?human), REPLACE(STR(?human), "^.*[/#]", ""), "") AS ?humanId)
   BIND(COALESCE(?humanName, ?humanId, "") AS ?humanLabel)
   BIND(COALESCE(?robotNameRaw, ?robotId, "") AS ?robotLabel)
   FILTER(BOUND(?human))
+  FILTER(?human = ?conversationHuman)
 }
 ORDER BY ?humanLabel ?robotLabel ?t ?message
 `,
@@ -391,6 +510,6 @@ WHERE {
   OPTIONAL { ?state prov:endedAtTime ?stateEndedAt }
   BIND(COALESCE(?generatedAt, ?stateStartedAt, ?stateEndedAt, "") AS ?t)
 }
-ORDER BY ?robot ?t
+ORDER BY ?t ?robot
 `,
 }

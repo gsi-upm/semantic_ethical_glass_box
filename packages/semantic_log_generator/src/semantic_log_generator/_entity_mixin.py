@@ -102,8 +102,9 @@ class EntityMixin:
         message_types: Sequence[RDFTermLike] | None = None,
         generated_by_activity: RDFTermLike | None = None,
         previous_message: RDFTermLike | None = None,
+        sender: RDFTermLike | None = None,
     ) -> URIRef:
-        """Logs a message entity and optional conversational relations."""
+        """Logs a message entity, optional sender attribution, and conversational relations."""
         message_uri = self.resource_uri("message", message_id)
         self.graph.add((message_uri, RDF.type, SCHEMA.Message))
         self.graph.add((message_uri, RDF.type, PROV.Entity))
@@ -119,6 +120,11 @@ class EntityMixin:
             )
         literal_language = language or self.default_language
         self.graph.add((message_uri, SCHEMA.text, Literal(text, lang=literal_language)))
+
+        if sender is not None:
+            sender_uri = self.resolve_term(sender)
+            self.graph.add((message_uri, SCHEMA.sender, sender_uri))
+            self.graph.add((message_uri, PROV.wasAttributedTo, sender_uri))
 
         if generated_by_activity:
             activity_uri = self.resolve_term(generated_by_activity)

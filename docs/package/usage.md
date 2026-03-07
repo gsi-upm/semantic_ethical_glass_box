@@ -41,6 +41,7 @@ logger.log_message(
     message_id="msg_1",
     generated_by_activity=listen,
     language="en",
+    sender=human_uri,
 )
 
 ttl_text = logger.serialize(format="turtle")

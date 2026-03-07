@@ -14,6 +14,11 @@ RUN npm run build
 
 FROM nginx:stable-alpine3.21-perl
 
+LABEL org.opencontainers.image.source=https://github.com/gsi-upm/semantic_ethical_glass_box
+LABEL org.opencontainers.image.description="SEGB web frontend"
+LABEL org.opencontainers.image.documentation="https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/"
+LABEL org.opencontainers.image.licenses=Apache-2.0
+
 COPY infrastructure/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 

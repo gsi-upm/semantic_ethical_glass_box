@@ -58,6 +58,10 @@ Session page reference screenshot:
 | `/system/logs` | Backend server logs | `admin` |
 | `/health` | Liveness/readiness checks | public |
 
+For a detailed explanation of what each report means and what dataset semantics it requires, see:
+
+- [Reports Dashboard](../web-ui/reports.md)
+
 ### 4) Recommended operator flow
 
 1. Open `/reports` and refresh.
