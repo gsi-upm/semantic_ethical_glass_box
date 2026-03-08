@@ -1,58 +1,80 @@
 # Quickstart
 
-## Objective
+## What You Will Do
 
-Run SEGB end-to-end in the shortest possible path: backend + Virtuoso + UI + demo dataset.
+This guide gives you the shortest complete SEGB run:
 
-## Prerequisites
+1. start the backend, Virtuoso, and the web UI,
+2. load a ready-made demo dataset,
+3. open the UI,
+4. confirm that SEGB is really working.
 
-- Docker Engine + Docker Compose v2
-- Free host ports: `5000`, `8080`, `8890`, `1111`
-- Python 3.10+
-- Run commands from repository root (`semantic_ethical_glass_box/`)
+If this is your first contact with the project, this is the right place to start.
 
-## Steps
+## Before You Start
 
-### 1) Configure environment
+You need:
+
+- Docker Engine and Docker Compose v2
+- free host ports `5000`, `8080`, `8890`, and `1111`
+- Python `3.10+`
+- to run commands from the repository root
+
+For the fastest first run, keep authentication disabled. In practice that means leaving `SECRET_KEY` empty in `.env`.
+You can enable auth later by following [Authentication and JWT](../operations/authentication-and-jwt.md).
+
+## Step 1: Create Your Local Environment File
+
+Copy the example file:
 
 ```bash
 cp .env.example .env
 ```
 
-Set at least:
+Set at least this value:
 
 ```env
 VIRTUOSO_PASSWORD=change-this-password
 ```
 
-Important:
+Two details matter here:
 
-- This initializes the Virtuoso DBA password only on first volume creation.
-- If you already have `virtuoso_data`, changing `VIRTUOSO_PASSWORD` in `.env` does not update the existing DB password.
+- this password is used when the `virtuoso_data` volume is created for the first time,
+- if that volume already exists, changing `VIRTUOSO_PASSWORD` later does not update the old database password.
 
-If auth is enabled (`SECRET_KEY` set), generate a token as documented in
-[Centralized Deployment: Step 5](../deployment/centralized.md#5-generate-jwt-only-if-auth-enabled).
+If you want the easiest first run, leave `SECRET_KEY` commented out for now.
 
-### 2) Start centralized services
+## Step 2: Start The Centralized Stack
+
+Run:
 
 ```bash
 docker compose -f docker-compose.yaml pull
 docker compose -f docker-compose.yaml up -d
 ```
 
-### 3) Check backend readiness
+This compose file starts the published backend and frontend images from GHCR. If you want hot reload while editing the
+software itself, use `docker-compose.dev.yml` later. For a first run, the production-like compose is simpler.
+
+## Step 3: Check That The Backend Is Ready
+
+Run:
 
 ```bash
 curl -s http://localhost:5000/healthz/live
 curl -s http://localhost:5000/healthz/ready
 ```
 
-Expected:
+Expected output:
 
 - `{"live": true}`
 - `{"ready": true, "virtuoso": true}`
 
-### 4) Prepare Python environment
+If `ready` is `false`, stop here and check [Observability and Reset](../operations/observability-and-reset.md).
+
+## Step 4: Prepare A Small Python Environment For The Demo Loader
+
+The next step uses one of the simulation scripts that ships with the repository. Create a small local environment for it:
 
 ```bash
 python3 -m venv .segb_env
@@ -61,9 +83,17 @@ python3 -m venv .segb_env
 ./.segb_env/bin/python -m pip install pydantic
 ```
 
-### 5) Load demo dataset
+Why `pydantic`? Some of the simulation flows validate backend JSON responses with typed contracts, so the demo tooling
+needs it even though the shortest package example does not.
 
-Auth disabled:
+## Step 5: Load The Demo Dataset
+
+This is the moment when SEGB becomes easy to understand. Instead of writing your own logger first, you load a dataset
+that already contains participants, messages, model usage, emotions, and robot state.
+
+Warning: this script clears the configured graph before inserting new data.
+
+If authentication is disabled:
 
 ```bash
 ./.segb_env/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
@@ -71,7 +101,7 @@ Auth disabled:
   --no-print-ttl
 ```
 
-Auth enabled:
+If authentication is enabled, use an `admin` token:
 
 ```bash
 ./.segb_env/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
@@ -80,32 +110,68 @@ Auth enabled:
   --no-print-ttl
 ```
 
-Warning: this flow clears the configured graph before insertion.
+If you chose secure mode and still need a token, use [Authentication and JWT](../operations/authentication-and-jwt.md)
+first, then come back here.
 
-### 6) Open the UI
+## Step 6: Open The UI
 
-- Reports: `http://localhost:8080/reports`
-- KG Graph: `http://localhost:8080/kg-graph`
+Open these pages in your browser:
 
-## Validation
+- reports: `http://localhost:8080/reports`
+- Knowledge Graph explorer: `http://localhost:8080/kg-graph`
 
-If auth is disabled:
+If authentication is enabled, first open:
+
+- session page: `http://localhost:8080/session`
+
+Then paste a token with the right role for the page you want to visit.
+
+## What Success Looks Like
+
+At this point you should be able to:
+
+- open `/reports` and see non-empty cards and charts,
+- open `/kg-graph` and see nodes and edges,
+- export non-empty Turtle through the backend.
+
+To check the export:
+
+If authentication is disabled:
 
 ```bash
 curl -s http://localhost:5000/events | head -n 20
 ```
 
-If auth is enabled:
+If authentication is enabled:
 
 ```bash
 curl -s http://localhost:5000/events \
   -H "Authorization: Bearer <auditor_or_admin_jwt>" | head -n 20
 ```
 
-Expected: non-empty Turtle output.
+Expected result: non-empty Turtle output.
 
-## Troubleshooting
+## A Simple Mental Model
 
-- `ready=false` on `/healthz/ready`: check `docker compose -f docker-compose.yaml logs -f amor-segb amor-segb-virtuoso`.
-- `401/403` while loading demo data: provide a valid `--token` with `admin` role.
-- Empty reports: run the dataset load step again and refresh `/reports`.
+If you want a quick intuition for what just happened:
+
+- the simulation script generated RDF logs,
+- the backend stored them in Virtuoso,
+- the UI queried that graph and turned the results into reports and graph views.
+
+That is the full SEGB loop.
+
+## If Something Does Not Work
+
+- `ready=false` on `/healthz/ready`: the backend cannot talk to Virtuoso yet. Check `docker compose -f docker-compose.yaml logs -f amor-segb amor-segb-virtuoso`.
+- `401/403` while loading the demo dataset: you enabled auth, but the script is missing a valid `admin` token.
+- reports are empty: run the dataset loader again and refresh `/reports`.
+- `Connection refused`: check whether the compose stack is still running with `docker compose -f docker-compose.yaml ps`.
+
+## Next Steps
+
+Now that you have seen the full product working, the most useful next pages are:
+
+1. [Core Concepts and Roles](core-concepts-and-roles.md)
+2. [Publish Your First Log](../guides/publish-your-first-log.md)
+3. [Explore the Web UI](../guides/explore-the-web-ui.md)

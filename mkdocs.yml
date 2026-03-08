@@ -6,19 +6,26 @@ repo_name: gsi-upm/semantic_ethical_glass_box
 theme:
   name: readthedocs
 
+exclude_docs: |
+  backup/
+
 nav:
   - Home: index.md
-  - Tutorials:
+  - Getting Started:
       - Quickstart: getting-started/quickstart.md
-      - Centralized Deployment (Backend + Frontend): deployment/centralized.md
-      - Install semantic_log_generator: package/installation.md
-      - Post Your First Log to SEGB: package/usage.md
-      - ROS4HRI Robot Simulator Tutorial: package/ros4hri-integration.md
-      - Shared Context Tutorial: backend/shared-context.md
-      - Validation Checklist (Optional): getting-started/segb-features.md
-  - Web UI:
-      - Reports Dashboard: web-ui/reports.md
-      - Web Observability (UI Tour): operations/web-observability.md
+      - Core Concepts and Roles: getting-started/core-concepts-and-roles.md
+  - Guides:
+      - Publish Your First Log: guides/publish-your-first-log.md
+      - Explore the Web UI: guides/explore-the-web-ui.md
+      - Shared Context Workflow: guides/shared-context-workflow.md
+      - ROS4HRI Integration: guides/ros4hri-integration.md
+      - Validation Checklist: guides/validation-checklist.md
+  - Operations:
+      - Centralized Deployment: operations/centralized-deployment.md
+      - Authentication and JWT: operations/authentication-and-jwt.md
+      - Observability and Reset: operations/observability-and-reset.md
   - Reference:
-      - Ontology (SEGB): reference/ontology.md
+      - API and Roles: reference/api-and-roles.md
+      - Ontology: reference/ontology.md
       - Monorepo Structure: reference/monorepo-structure.md
+      - Use-Case Matrix: reference/use-case-matrix.md

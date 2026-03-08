@@ -44,8 +44,11 @@ cp .env.example .env
 Important:
 
 - This `.env` config applies to centralized services (backend/web/virtuoso).
+- This initializes the Virtuoso DBA password only on first volume creation.
+- If you already have `virtuoso_data`, changing `VIRTUOSO_PASSWORD` in `.env` does not update the existing DB password.
 - Distributed robot processes running `semantic_log_generator` do not auto-read this centralized `.env`.
 - If `SECRET_KEY` is empty/unset, backend auth is disabled and all roles are effectively open.
+- If auth is enabled (`SECRET_KEY` set), generate a token as documented in [`docs/operations/authentication-and-jwt.md`](docs/operations/authentication-and-jwt.md).
 
 ### 1) Start the centralized stack
 
@@ -53,6 +56,8 @@ Important:
 docker compose -f docker-compose.yaml pull
 docker compose -f docker-compose.yaml up -d
 ```
+
+`docker-compose.yaml` starts the published GHCR images. If you need backend/frontend hot reload from the current checkout, use `docker-compose.dev.yml` instead.
 
 ### 2) Create a Python environment for simulations (one-time)
 
@@ -77,6 +82,15 @@ If you need to pin an interpreter, replace `python3` with `python3.10`, `python3
   --no-print-ttl
 ```
 
+If auth is enabled, pass an admin token:
+
+```bash
+./.segb_env/bin/python -m examples.simulations.run_use_case_02_report_ready_dataset \
+  --publish-url http://localhost:5000 \
+  --token "<admin_jwt>" \
+  --no-print-ttl
+```
+
 If the API is not at `localhost:5000`, override `--publish-url`.
 
 For the full use-case matrix and commands, see [`examples/simulations/README.md`](examples/simulations/README.md).
@@ -86,6 +100,7 @@ For the full use-case matrix and commands, see [`examples/simulations/README.md`
 - Reports dashboard: `http://localhost:8080/reports`
 - KG graph explorer: `http://localhost:8080/kg-graph`
 - System logs (admin): `http://localhost:8080/system/logs`
+- Session / JWT management: `http://localhost:8080/session`
 - Backend OpenAPI docs: `http://localhost:5000/docs`
 
 ## UI Screenshots

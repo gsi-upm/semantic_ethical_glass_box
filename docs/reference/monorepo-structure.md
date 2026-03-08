@@ -1,46 +1,126 @@
 # Monorepo Structure
 
-## Objective
+## Why This Page Exists
 
-Provide a deterministic map of where code, tests, and docs live in this repository.
+SEGB is a monorepo, which is convenient once you know where things live and frustrating when you do not. This page is a
+practical map of the repository.
 
-## Prerequisites
+## The Big Picture
 
-- Repository cloned locally
-- Basic shell navigation (`ls`, `cd`, `rg`)
+You can think of the repository in four layers:
 
-## Steps
+1. runtime applications,
+2. reusable package,
+3. examples and tests,
+4. documentation and assets.
 
-### 1) Locate runtime applications
+## Runtime Applications
 
-- `apps/backend`: FastAPI backend and API services
-- `apps/frontend`: Vue UI (`segb-ui`) and frontend packaging
+### `apps/backend`
 
-### 2) Locate reusable package
+This is the FastAPI backend.
 
-- `packages/semantic_log_generator`: Python package for RDF logging
+You will usually come here when you need to change:
 
-### 3) Locate examples and tests
+- API routes,
+- request and response handling,
+- graph insertion and query behavior,
+- security and token validation,
+- backend operational tools.
 
-- `examples`: simulations, mocks, notebooks
-- `apps/backend/tests`: backend unit/integration tests
-- `packages/semantic_log_generator/tests`: package unit tests
+Useful starting points:
+
+- `apps/backend/src/api`
+- `apps/backend/src/services`
+- `apps/backend/src/core`
+
+### `apps/frontend`
+
+This is the SEGB web UI and its packaging.
+
+You will usually come here when you need to change:
+
+- routes such as `/reports` or `/kg-graph`,
+- frontend role gating,
+- report rendering,
+- UI-side API calls,
+- production frontend container packaging.
+
+Useful starting points:
+
+- `apps/frontend/segb-ui/src`
+- `apps/frontend/Dockerfile`
+- `apps/frontend/infrastructure/nginx.conf`
+
+## Reusable Package
+
+### `packages/semantic_log_generator`
+
+This is the Python package used by robots and simulations to build semantic logs.
+
+You will usually come here when you need to change:
+
+- RDF generation,
+- logger APIs,
+- publisher behavior,
+- namespace bindings,
+- package metadata and distribution.
+
+Useful starting points:
+
+- `packages/semantic_log_generator/src`
+- `packages/semantic_log_generator/tests`
+
+## Examples And Tests
+
+### `examples/simulations`
+
+Ready-made use cases such as UC-01 to UC-05. These are the fastest way to exercise the stack end to end.
+
+### `examples/notebooks`
+
+Notebook versions of some learning and demonstration flows.
+
+### `examples/mocks`
+
+Small mock helpers used by the example flows.
+
+### Test Locations
+
+- `apps/backend/tests`: backend-focused tests
+- `packages/semantic_log_generator/tests`: package tests
 - `examples/simulations/tests`: simulation integration tests
-- `apps/frontend/segb-ui/tests`: frontend unit tests
+- `tests`: cross-project or reserved top-level scope
 
-### 4) Locate documentation
+## Documentation
 
-- `docs`: deploy, operations, package, backend, internals, reference pages
+### `docs`
 
-## Validation
+This folder contains the MkDocs documentation source.
 
-You should be able to answer these quickly:
+Important note:
 
-- Where backend endpoint logic lives: `apps/backend/src/api`
-- Where simulation entry points live: `examples/simulations`
-- Where package API lives: `packages/semantic_log_generator/src/semantic_log_generator`
+- `docs/backup` stores preserved pre-restructure pages that are intentionally kept out of the main published navigation.
 
-## Troubleshooting
+## A Quick "Where Should I Look?" Guide
 
-- Unsure where to start: read repository `README.md`, then [Centralized Deployment](../deployment/centralized.md).
-- Looking for tests of a component: check the component-local `tests` directory first.
+If the problem is about:
+
+- a failing API endpoint, start in `apps/backend`
+- a broken UI page, start in `apps/frontend/segb-ui/src`
+- a robot-side logging API, start in `packages/semantic_log_generator`
+- a demo or end-to-end scenario, start in `examples/simulations`
+- the docs site itself, start in `docs`
+
+## Quick Validation
+
+From the repository root, these commands should succeed:
+
+```bash
+test -d apps/backend && echo backend_ok
+test -d apps/frontend && echo frontend_ok
+test -d packages/semantic_log_generator && echo package_ok
+test -d docs && echo docs_ok
+```
+
+Expected result: four `*_ok` lines.
