@@ -45,7 +45,7 @@ You want:
 ```
 
 That response means the backend is up and its storage layer is reachable. If readiness stays `false`, stop here and
-check [Observability and Reset](../operations/observability-and-reset.md). There is no point instrumenting the robot if
+check [Centralized Deployment](../operations/centralized-deployment.md). There is no point instrumenting the robot if
 the place where it should publish is not ready yet.
 
 ## Step 2: Install The Runtime Dependencies

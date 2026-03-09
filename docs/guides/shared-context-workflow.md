@@ -14,8 +14,7 @@ emotion analysis, gesture recognition, or any situation where several components
 ## Before You Start
 
 Follow [Quickstart](../getting-started/quickstart.md) to start the backend, Virtuoso, and the UI, and to create
-`./.segb_env`. If you want the compact explanation of UC-03 and UC-04 as named scenarios, see
-[Use-Case Matrix](../reference/use-case-matrix.md). If auth is enabled, create an `admin` token with
+`./.segb_env`. If auth is enabled, create an `admin` token with
 [Authentication and JWT](../operations/authentication-and-jwt.md) and store it through
 `http://localhost:8080/session` before continuing.
 
@@ -128,5 +127,6 @@ ambiguous case, the UI lets you review that case, and the counters update after 
 
 ## Next Steps
 
-If you want the compact lookup for all use cases, read [Use-Case Matrix](../reference/use-case-matrix.md). If you want
-the exact permissions behind the UI and endpoints used here, read [API and Roles](../reference/api-and-roles.md).
+If you want the compact lookup for all use cases, inspect the simulation entry points under
+`examples/simulations`. If you want the exact permissions behind the UI and endpoints used here, read
+[API and Roles](../reference/api-and-roles.md).

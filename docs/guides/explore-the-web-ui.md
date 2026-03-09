@@ -131,5 +131,5 @@ Reference screenshot:
 
 If you want to go deeper after this UI tour, continue with [Shared Context Workflow](shared-context-workflow.md),
 [Authentication and JWT](../operations/authentication-and-jwt.md),
-[Observability and Reset](../operations/observability-and-reset.md), and
+[Centralized Deployment](../operations/centralized-deployment.md), and
 [API and Roles](../reference/api-and-roles.md).

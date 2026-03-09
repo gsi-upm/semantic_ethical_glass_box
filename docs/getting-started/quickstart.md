@@ -1,9 +1,8 @@
 # Quickstart
 
 This guide gives you the shortest complete SEGB run. You will start the backend, the storage layer behind it, and the
-web UI, load the
-[UC-02 report-ready dataset](../reference/use-case-matrix.md), and verify that the reports and graph explorer are
-showing real interaction data. The underlying script is
+web UI, load the UC-02 report-ready dataset, and verify that the reports and graph explorer are showing real
+interaction data. The underlying script is
 `examples/simulations/run_use_case_02_report_ready_dataset.py`. If this is your first contact with the project, this is
 the right place to start.
 
@@ -74,7 +73,7 @@ curl -s http://localhost:5000/healthz/ready
 ```
 
 You want `{"live": true}` and `{"ready": true, "virtuoso": true}`. If readiness stays `false`, stop here and check
-[Observability and Reset](../operations/observability-and-reset.md).
+[Centralized Deployment](../operations/centralized-deployment.md).
 
 ## Step 4: Create A Small Python Environment For The Demo Loader
 

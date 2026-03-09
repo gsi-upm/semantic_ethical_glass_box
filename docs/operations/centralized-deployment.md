@@ -188,4 +188,3 @@ This is destructive. It deletes the persisted database volume.
 
 - [Quickstart](../getting-started/quickstart.md)
 - [Authentication and JWT](authentication-and-jwt.md)
-- [Observability and Reset](observability-and-reset.md)

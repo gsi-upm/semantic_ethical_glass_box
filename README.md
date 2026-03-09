@@ -86,7 +86,7 @@ Use these pages as the main reading path:
 - UI walkthrough: [Explore the Web UI](docs/guides/explore-the-web-ui.md)
 - Shared context flow: [Shared Context Workflow](docs/guides/shared-context-workflow.md)
 - ROS integration: [ROS4HRI Integration](docs/guides/ros4hri-integration.md)
-- Deployment and operation: [Centralized Deployment](docs/operations/centralized-deployment.md), [Authentication and JWT](docs/operations/authentication-and-jwt.md), [Observability and Reset](docs/operations/observability-and-reset.md)
-- Protocol and data reference: [API and Roles](docs/reference/api-and-roles.md), [Ontology](docs/reference/ontology.md), [Use-Case Matrix](docs/reference/use-case-matrix.md)
+- Deployment and operation: [Centralized Deployment](docs/operations/centralized-deployment.md), [Authentication and JWT](docs/operations/authentication-and-jwt.md)
+- Protocol and data reference: [API and Roles](docs/reference/api-and-roles.md), [Ontology](docs/reference/ontology.md)
 
 If you prefer to browse the docs from the repository, start at [docs/index.md](docs/index.md).

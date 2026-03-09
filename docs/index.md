@@ -73,7 +73,5 @@ Reference screenshot:
 If you want a conceptual glossary after the first run, read
 [Core Concepts and Roles](getting-started/core-concepts-and-roles.md). If you are operating the stack, go to
 [Centralized Deployment](operations/centralized-deployment.md),
-[Authentication and JWT](operations/authentication-and-jwt.md), and
-[Observability and Reset](operations/observability-and-reset.md). If you need protocol and data details, use the
-reference section: [API and Roles](reference/api-and-roles.md), [Ontology](reference/ontology.md), and
-[Use-Case Matrix](reference/use-case-matrix.md).
+[Authentication and JWT](operations/authentication-and-jwt.md). If you need protocol and data details, use the
+reference section: [API and Roles](reference/api-and-roles.md) and [Ontology](reference/ontology.md).

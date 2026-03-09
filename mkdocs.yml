@@ -23,8 +23,6 @@ nav:
   - Operations:
       - Centralized Deployment: operations/centralized-deployment.md
       - Authentication and JWT: operations/authentication-and-jwt.md
-      - Observability and Reset: operations/observability-and-reset.md
   - Reference:
       - API and Roles: reference/api-and-roles.md
       - Ontology: reference/ontology.md
-      - Use-Case Matrix: reference/use-case-matrix.md

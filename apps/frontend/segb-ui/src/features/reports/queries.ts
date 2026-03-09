@@ -1,40 +1,84 @@
 export const REPORT_EXTREME_EMOTION_THRESHOLD = 0.75
 const EXTREME_THRESHOLD_LITERAL = REPORT_EXTREME_EMOTION_THRESHOLD.toFixed(2)
 
+const entityDisplayBinding = (variableName: string, outputName: string) => `
+  OPTIONAL { ${variableName} foaf:firstName ?${outputName}FirstName }
+  OPTIONAL { ${variableName} schema:name ?${outputName}SchemaName }
+  OPTIONAL { ${variableName} rdfs:label ?${outputName}RdfsLabel }
+  BIND(REPLACE(STR(${variableName}), "^.*[/#]", "") AS ?${outputName}Id)
+  BIND(COALESCE(?${outputName}FirstName, ?${outputName}SchemaName, ?${outputName}RdfsLabel, ?${outputName}Id) AS ?${outputName})
+`
+
+const humanTypePattern = (variableName: string) => `{
+  ${variableName} a oro:Human .
+}
+UNION
+{
+  ${variableName} a foaf:Person .
+}
+UNION
+{
+  ${variableName} a prov:Person .
+}`
+
+const humanRoleBindings = (variableName: string, outputName: string) => `
+  OPTIONAL { ${variableName} a oro:Human . BIND("human" AS ?${outputName}OroHuman) }
+  OPTIONAL { ${variableName} a foaf:Person . BIND("human" AS ?${outputName}FoafPerson) }
+  OPTIONAL { ${variableName} a prov:Person . BIND("human" AS ?${outputName}ProvPerson) }
+`
+
+const linkedHumanPattern = (
+  activityName: string,
+  robotName: string,
+  humanName: string,
+  sharedEventName: string,
+) => `{
+  ${activityName} schema:about ${sharedEventName} .
+  ${sharedEventName} schema:about ${humanName} .
+}
+UNION
+{
+  ${activityName} segb:wasRequestedBy ${humanName} .
+}
+UNION
+{
+  ${robotName} oro:belongsTo ${humanName} .
+}
+UNION
+{
+  ${activityName} oro:hasSpeaker ${robotName} ;
+                 oro:hasListener ${humanName} .
+}
+UNION
+{
+  ${activityName} oro:hasSpeaker ${humanName} ;
+                 oro:hasListener ${robotName} .
+}`
+
 export const reportQueries = {
   participantsHumans: `
 PREFIX segb: <http://www.gsi.upm.es/ontologies/segb/ns#>
 PREFIX oro: <http://kb.openrobots.org#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX schema: <http://schema.org/>
 
 SELECT
   ?participant
   (GROUP_CONCAT(DISTINCT ?robotDisplay; separator="__SEGB_LINE_BREAK__") AS ?interactedRobots)
 WHERE {
-  ?activity a segb:LoggedActivity ;
-            segb:wasPerformedBy ?robot .
-  ?robot a oro:Robot .
-  OPTIONAL { ?robot schema:name ?robotNameRaw }
-  BIND(REPLACE(STR(?robot), "^.*[/#]", "") AS ?robotId)
-  BIND(COALESCE(?robotNameRaw, ?robotId) AS ?robotDisplay)
+  ${humanTypePattern('?human')}
+  FILTER NOT EXISTS { ?human a oro:Robot . }
+  ${entityDisplayBinding('?human', 'participant')}
 
-  {
-    ?activity schema:about ?sharedEvent .
-    ?sharedEvent schema:about ?human .
+  OPTIONAL {
+    ?activity a segb:LoggedActivity ;
+              segb:wasPerformedBy ?robot .
+    ?robot a oro:Robot .
+    ${entityDisplayBinding('?robot', 'robotDisplay')}
+    ${linkedHumanPattern('?activity', '?robot', '?human', '?sharedEvent')}
   }
-  UNION
-  {
-    ?activity segb:wasRequestedBy ?human .
-  }
-  UNION
-  {
-    ?robot oro:belongsTo ?human .
-  }
-
-  ?human a oro:Human .
-  OPTIONAL { ?human foaf:firstName ?humanName }
-  BIND(COALESCE(?humanName, STR(?human)) AS ?participant)
 }
 GROUP BY ?participant
 ORDER BY ?participant
@@ -44,6 +88,8 @@ ORDER BY ?participant
 PREFIX segb: <http://www.gsi.upm.es/ontologies/segb/ns#>
 PREFIX oro: <http://kb.openrobots.org#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX schema: <http://schema.org/>
 
 SELECT
@@ -52,9 +98,7 @@ SELECT
   (GROUP_CONCAT(DISTINCT ?interactedRobot; separator="__SEGB_LINE_BREAK__") AS ?interactedRobots)
 WHERE {
   ?robot a oro:Robot .
-  OPTIONAL { ?robot schema:name ?robotNameRaw }
-  BIND(REPLACE(STR(?robot), "^.*[/#]", "") AS ?robotId)
-  BIND(COALESCE(?robotNameRaw, ?robotId) AS ?participant)
+  ${entityDisplayBinding('?robot', 'participant')}
 
   OPTIONAL {
     {
@@ -62,23 +106,10 @@ WHERE {
       WHERE {
         ?activity a segb:LoggedActivity ;
                   segb:wasPerformedBy ?robot .
-
-        {
-          ?activity schema:about ?sharedEvent .
-          ?sharedEvent schema:about ?human .
-        }
-        UNION
-        {
-          ?activity segb:wasRequestedBy ?human .
-        }
-        UNION
-        {
-          ?robot oro:belongsTo ?human .
-        }
-
-        ?human a oro:Human .
-        OPTIONAL { ?human foaf:firstName ?humanName }
-        BIND(COALESCE(?humanName, STR(?human)) AS ?interactedHuman)
+        ${linkedHumanPattern('?activity', '?robot', '?human', '?sharedEvent')}
+        ${humanTypePattern('?human')}
+        FILTER NOT EXISTS { ?human a oro:Robot . }
+        ${entityDisplayBinding('?human', 'interactedHuman')}
       }
     }
   }
@@ -89,42 +120,15 @@ WHERE {
       WHERE {
         ?activity a segb:LoggedActivity ;
                   segb:wasPerformedBy ?robot .
-
-        {
-          ?activity schema:about ?sharedEvent .
-          ?sharedEvent schema:about ?human .
-        }
-        UNION
-        {
-          ?activity segb:wasRequestedBy ?human .
-        }
-        UNION
-        {
-          ?robot oro:belongsTo ?human .
-        }
-
-        ?human a oro:Human .
+        ${linkedHumanPattern('?activity', '?robot', '?human', '?sharedEvent')}
+        ${humanTypePattern('?human')}
+        FILTER NOT EXISTS { ?human a oro:Robot . }
 
         ?otherActivity a segb:LoggedActivity ;
                        segb:wasPerformedBy ?otherRobot .
         FILTER (?otherRobot != ?robot)
-
-        {
-          ?otherActivity schema:about ?otherSharedEvent .
-          ?otherSharedEvent schema:about ?human .
-        }
-        UNION
-        {
-          ?otherActivity segb:wasRequestedBy ?human .
-        }
-        UNION
-        {
-          ?otherRobot oro:belongsTo ?human .
-        }
-
-        OPTIONAL { ?otherRobot schema:name ?otherRobotNameRaw }
-        BIND(REPLACE(STR(?otherRobot), "^.*[/#]", "") AS ?otherRobotId)
-        BIND(COALESCE(?otherRobotNameRaw, ?otherRobotId) AS ?interactedRobot)
+        ${linkedHumanPattern('?otherActivity', '?otherRobot', '?human', '?otherSharedEvent')}
+        ${entityDisplayBinding('?otherRobot', 'interactedRobot')}
       }
     }
   }
@@ -140,6 +144,7 @@ PREFIX schema: <http://schema.org/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX oro: <http://kb.openrobots.org#>
 PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 
 SELECT
   ?activity
@@ -166,9 +171,7 @@ WHERE {
     BIND(REPLACE(STR(?activityTypeCandidate), "^.*[/#]", "") AS ?activityTypeCandidateId)
     BIND(COALESCE(STR(?activityTypeCandidateLabel), ?activityTypeCandidateId) AS ?activityTypeLabel)
   }
-  OPTIONAL { ?usedBy schema:name ?usedByNameRaw }
-  BIND(REPLACE(STR(?usedBy), "^.*[/#]", "") AS ?usedById)
-  BIND(COALESCE(?usedByNameRaw, ?usedById) AS ?usedByName)
+  ${entityDisplayBinding('?usedBy', 'usedByName')}
   OPTIONAL { ?activity prov:startedAtTime ?startedAt }
 
   OPTIONAL { ?model rdfs:label ?modelLabel }
@@ -248,27 +251,33 @@ WHERE {
   }
   FILTER(?targetCount = 1)
 
-  OPTIONAL { ?targetEntity foaf:firstName ?personName }
-  OPTIONAL { ?targetEntity schema:name ?robotName }
-  OPTIONAL { ?targetEntity rdfs:label ?entityLabel }
-  BIND(REPLACE(STR(?targetEntity), "^.*[/#]", "") AS ?targetEntityId)
-  BIND(COALESCE(?personName, ?robotName, ?entityLabel, ?targetEntityId) AS ?targetLabel)
+  ${entityDisplayBinding('?targetEntity', 'targetLabel')}
 
-  OPTIONAL { ?performedBy foaf:firstName ?performedByPersonName }
-  OPTIONAL { ?performedBy schema:name ?performedByRobotName }
-  OPTIONAL { ?performedBy rdfs:label ?performedByEntityLabel }
-  BIND(IF(BOUND(?performedBy), REPLACE(STR(?performedBy), "^.*[/#]", ""), "") AS ?performedById)
-  BIND(COALESCE(?performedByPersonName, ?performedByRobotName, ?performedByEntityLabel, ?performedById) AS ?performedByLabel)
+  ${entityDisplayBinding('?performedBy', 'performedByLabel')}
 
   OPTIONAL { ?performedBy a oro:Robot . BIND("robot" AS ?performedByTypeRobot) }
-  OPTIONAL { ?performedBy a oro:Human . BIND("human" AS ?performedByTypeHuman) }
-  OPTIONAL { ?performedBy a prov:Person . BIND("human" AS ?performedByTypePerson) }
-  BIND(COALESCE(?performedByTypeRobot, ?performedByTypeHuman, ?performedByTypePerson, "entity") AS ?performedByType)
+  ${humanRoleBindings('?performedBy', 'performedByType')}
+  BIND(
+    COALESCE(
+      ?performedByTypeRobot,
+      ?performedByTypeOroHuman,
+      ?performedByTypeFoafPerson,
+      ?performedByTypeProvPerson,
+      "entity"
+    ) AS ?performedByType
+  )
 
   OPTIONAL { ?targetEntity a oro:Robot . BIND("robot" AS ?targetTypeRobot) }
-  OPTIONAL { ?targetEntity a oro:Human . BIND("human" AS ?targetTypeHuman) }
-  OPTIONAL { ?targetEntity a prov:Person . BIND("human" AS ?targetTypePerson) }
-  BIND(COALESCE(?targetTypeRobot, ?targetTypeHuman, ?targetTypePerson, "entity") AS ?targetType)
+  ${humanRoleBindings('?targetEntity', 'targetType')}
+  BIND(
+    COALESCE(
+      ?targetTypeRobot,
+      ?targetTypeOroHuman,
+      ?targetTypeFoafPerson,
+      ?targetTypeProvPerson,
+      "entity"
+    ) AS ?targetType
+  )
   FILTER(?targetType = "human" || ?targetType = "robot")
 }
 ORDER BY ?t DESC(?intensity)
@@ -319,15 +328,11 @@ WHERE {
   }
   FILTER(?targetCount = 1)
 
-  OPTIONAL { ?targetEntity a oro:Human . BIND("human" AS ?targetTypeHuman) }
-  OPTIONAL { ?targetEntity a prov:Person . BIND("human" AS ?targetTypePerson) }
-  BIND(COALESCE(?targetTypeHuman, ?targetTypePerson, "entity") AS ?targetType)
+  ${humanRoleBindings('?targetEntity', 'targetType')}
+  BIND(COALESCE(?targetTypeOroHuman, ?targetTypeFoafPerson, ?targetTypeProvPerson, "entity") AS ?targetType)
   FILTER(?targetType = "human")
 
-  OPTIONAL { ?targetEntity foaf:firstName ?personName }
-  OPTIONAL { ?targetEntity rdfs:label ?entityLabel }
-  BIND(REPLACE(STR(?targetEntity), "^.*[/#]", "") AS ?targetEntityId)
-  BIND(COALESCE(?personName, ?entityLabel, ?targetEntityId) AS ?targetLabel)
+  ${entityDisplayBinding('?targetEntity', 'targetLabel')}
 
   BIND(xsd:double(STR(?intensity)) AS ?intensityValue)
   FILTER(BOUND(?intensityValue))
@@ -342,6 +347,7 @@ PREFIX oro: <http://kb.openrobots.org#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 PREFIX schema: <http://schema.org/>
 PREFIX prov: <http://www.w3.org/ns/prov#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT
   ?message
@@ -368,35 +374,37 @@ WHERE {
 
       OPTIONAL { ?pairMessage schema:sender ?pairSenderBySchema }
       OPTIONAL { ?pairMessage prov:wasAttributedTo ?pairSenderByProv }
-      BIND(COALESCE(?pairSenderBySchema, ?pairSenderByProv) AS ?pairSender)
+      OPTIONAL { ?pairActivity oro:hasSpeaker ?pairSpeaker }
+      OPTIONAL { ?pairActivity oro:hasListener ?pairListener }
+      BIND(COALESCE(?pairSenderBySchema, ?pairSenderByProv, ?pairSpeaker) AS ?pairSender)
 
       OPTIONAL {
         ?pairActivity schema:about ?pairSharedEvent .
         ?pairSharedEvent schema:about ?pairHumanByActivity .
-        ?pairHumanByActivity a oro:Human .
+        ${humanTypePattern('?pairHumanByActivity')}
       }
       OPTIONAL {
         ?pairMessage prov:specializationOf ?pairMessageSharedEvent .
         ?pairMessageSharedEvent schema:about ?pairHumanByMessage .
-        ?pairHumanByMessage a oro:Human .
+        ${humanTypePattern('?pairHumanByMessage')}
       }
       OPTIONAL {
-        ?pairSender a oro:Human .
-        BIND(?pairSender AS ?pairHumanBySenderHuman)
+        ${humanTypePattern('?pairSpeaker')}
+        BIND(?pairSpeaker AS ?pairHumanBySpeaker)
       }
       OPTIONAL {
-        ?pairSender a prov:Person .
-        BIND(?pairSender AS ?pairHumanBySenderPerson)
+        ${humanTypePattern('?pairListener')}
+        BIND(?pairListener AS ?pairHumanByListener)
       }
       OPTIONAL {
         ?robot oro:belongsTo ?pairHumanByOwnership .
-        ?pairHumanByOwnership a oro:Human .
+        ${humanTypePattern('?pairHumanByOwnership')}
       }
 
       BIND(
         COALESCE(
-          ?pairHumanBySenderHuman,
-          ?pairHumanBySenderPerson,
+          ?pairHumanBySpeaker,
+          ?pairHumanByListener,
           ?pairHumanByMessage,
           ?pairHumanByActivity,
           ?pairHumanByOwnership
@@ -404,13 +412,13 @@ WHERE {
       )
       FILTER(BOUND(?conversationHuman))
 
-      OPTIONAL { ?pairSender a oro:Human . BIND("human" AS ?pairSenderRoleBySenderHuman) }
-      OPTIONAL { ?pairSender a prov:Person . BIND("human" AS ?pairSenderRoleBySenderPerson) }
+      ${humanRoleBindings('?pairSender', 'pairSenderRoleBySender')}
       OPTIONAL { ?pairSender a oro:Robot . BIND("robot" AS ?pairSenderRoleBySenderRobot) }
       BIND(
         COALESCE(
-          ?pairSenderRoleBySenderHuman,
-          ?pairSenderRoleBySenderPerson,
+          ?pairSenderRoleBySenderOroHuman,
+          ?pairSenderRoleBySenderFoafPerson,
+          ?pairSenderRoleBySenderProvPerson,
           ?pairSenderRoleBySenderRobot,
           IF(BOUND(?pairHumanByMessage), "human", "robot")
         ) AS ?pairSenderRole
@@ -431,8 +439,7 @@ WHERE {
             segb:wasPerformedBy ?robot .
 
   ?robot a oro:Robot .
-  OPTIONAL { ?robot schema:name ?robotNameRaw }
-  BIND(REPLACE(STR(?robot), "^.*[/#]", "") AS ?robotId)
+  ${entityDisplayBinding('?robot', 'robotLabel')}
 
   OPTIONAL { ?activity prov:startedAtTime ?startedAt }
   OPTIONAL { ?activity prov:endedAtTime ?endedAt }
@@ -440,41 +447,43 @@ WHERE {
 
   OPTIONAL { ?message schema:sender ?senderBySchema }
   OPTIONAL { ?message prov:wasAttributedTo ?senderByProv }
-  BIND(COALESCE(?senderBySchema, ?senderByProv) AS ?sender)
+  OPTIONAL { ?activity oro:hasSpeaker ?speaker }
+  OPTIONAL { ?activity oro:hasListener ?listener }
+  BIND(COALESCE(?senderBySchema, ?senderByProv, ?speaker) AS ?sender)
 
   OPTIONAL {
     ?activity schema:about ?sharedEvent .
     ?sharedEvent schema:about ?humanByActivity .
-    ?humanByActivity a oro:Human .
+    ${humanTypePattern('?humanByActivity')}
   }
   OPTIONAL {
     ?message prov:specializationOf ?messageSharedEvent .
     ?messageSharedEvent schema:about ?humanByMessage .
-    ?humanByMessage a oro:Human .
+    ${humanTypePattern('?humanByMessage')}
   }
   OPTIONAL {
-    ?sender a oro:Human .
-    BIND(?sender AS ?humanBySenderHuman)
+    ${humanTypePattern('?speaker')}
+    BIND(?speaker AS ?humanBySpeaker)
   }
   OPTIONAL {
-    ?sender a prov:Person .
-    BIND(?sender AS ?humanBySenderPerson)
+    ${humanTypePattern('?listener')}
+    BIND(?listener AS ?humanByListener)
   }
   OPTIONAL {
     ?robot oro:belongsTo ?humanByOwnership .
-    ?humanByOwnership a oro:Human .
+    ${humanTypePattern('?humanByOwnership')}
   }
 
-  BIND(COALESCE(?humanBySenderHuman, ?humanBySenderPerson, ?humanByMessage, ?humanByActivity, ?humanByOwnership) AS ?human)
-  OPTIONAL { ?human foaf:firstName ?humanName }
+  BIND(COALESCE(?humanBySpeaker, ?humanByListener, ?humanByMessage, ?humanByActivity, ?humanByOwnership) AS ?human)
+  ${entityDisplayBinding('?human', 'humanLabel')}
 
-  OPTIONAL { ?sender a oro:Human . BIND("human" AS ?senderRoleBySenderHuman) }
-  OPTIONAL { ?sender a prov:Person . BIND("human" AS ?senderRoleBySenderPerson) }
+  ${humanRoleBindings('?sender', 'senderRoleBySender')}
   OPTIONAL { ?sender a oro:Robot . BIND("robot" AS ?senderRoleBySenderRobot) }
   BIND(
     COALESCE(
-      ?senderRoleBySenderHuman,
-      ?senderRoleBySenderPerson,
+      ?senderRoleBySenderOroHuman,
+      ?senderRoleBySenderFoafPerson,
+      ?senderRoleBySenderProvPerson,
       ?senderRoleBySenderRobot,
       IF(BOUND(?humanByMessage), "human", "robot")
     ) AS ?senderRole
@@ -482,9 +491,6 @@ WHERE {
   BIND(IF(?senderRole = "human", "HumanMessage", IF(?senderRole = "robot", "RobotMessage", "Message")) AS ?messageType)
 
   BIND("robot" AS ?performedByRole)
-  BIND(IF(BOUND(?human), REPLACE(STR(?human), "^.*[/#]", ""), "") AS ?humanId)
-  BIND(COALESCE(?humanName, ?humanId, "") AS ?humanLabel)
-  BIND(COALESCE(?robotNameRaw, ?robotId, "") AS ?robotLabel)
   FILTER(BOUND(?human))
   FILTER(?human = ?conversationHuman)
 }
@@ -495,6 +501,8 @@ ORDER BY ?humanLabel ?robotLabel ?t ?message
 PREFIX prov: <http://www.w3.org/ns/prov#>
 PREFIX schema: <http://schema.org/>
 PREFIX oro: <http://kb.openrobots.org#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
 SELECT ?robot ?robotName ?t ?location
 WHERE {
@@ -502,9 +510,7 @@ WHERE {
          prov:wasAttributedTo ?robot ;
          prov:atLocation ?location .
   ?robot a oro:Robot .
-  OPTIONAL { ?robot schema:name ?robotNameRaw }
-  BIND(REPLACE(STR(?robot), "^.*[/#]", "") AS ?robotId)
-  BIND(COALESCE(?robotNameRaw, ?robotId) AS ?robotName)
+  ${entityDisplayBinding('?robot', 'robotName')}
   OPTIONAL { ?state prov:generatedAtTime ?generatedAt }
   OPTIONAL { ?state prov:startedAtTime ?stateStartedAt }
   OPTIONAL { ?state prov:endedAtTime ?stateEndedAt }
