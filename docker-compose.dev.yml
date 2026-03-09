@@ -67,7 +67,8 @@ services:
     depends_on:
       - amor-segb
     environment:
-      - VITE_API_URL=http://localhost:5000
+      - VITE_API_URL=/api
+      - VITE_API_PROXY_TARGET=http://amor-segb:5000
       - CHOKIDAR_USEPOLLING=true
       - CHOKIDAR_INTERVAL=100
     ports:
