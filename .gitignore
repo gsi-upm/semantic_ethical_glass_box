@@ -8,13 +8,12 @@ tutorial/interactive_segb_graph.html
 .env
 k8s/
 playground/
-logs/
+/logs/
 local_scripts/
 new_version_publisher.sh
 *.log
 *.bak
 *.env
-logs
 db/
 final.ttl
 apps/frontend/segb-ui/node_modules/
