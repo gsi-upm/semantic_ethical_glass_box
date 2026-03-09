@@ -37,7 +37,7 @@ python -m pip install semantic-log-generator
 python -m pip install \
   --index-url https://test.pypi.org/simple/ \
   --extra-index-url https://pypi.org/simple \
-  "semantic-log-generator>=1.0.0,<2.0.0"
+  "semantic-log-generator>=1.0.5,<2.0.0"
 ```
 
 ### From GitHub subdirectory

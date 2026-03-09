@@ -1,50 +1,30 @@
 # Publish Your First Log
 
-## What You Will Do
-
-In this guide you will create a very small Python script that:
-
-1. builds a semantic log,
-2. serializes it to Turtle,
-3. sends it to the SEGB backend,
-4. verifies the result in the API and the UI.
-
-This is the best next step after Quickstart if you want to move from "I saw SEGB working" to "I can publish my own
-data".
+Once you have seen SEGB working with the demo dataset, the next step is to publish a minimal log of your own. This
+guide creates one human, one activity, and one message, then sends that data to the backend and verifies the result
+through the API and the UI.
 
 ## Before You Start
 
-You need:
-
-- a running SEGB backend at `http://localhost:5000`
-- Python `3.10+`
-- if auth is enabled, a JWT with role `logger` or `admin`
-
-If you still need the centralized stack, follow [Quickstart](../getting-started/quickstart.md) first.
+You need a running SEGB backend at `http://localhost:5000`, Python `3.10+`, and, if auth is enabled, a JWT with role
+`logger` or `admin`. If you still need the centralized stack, follow [Quickstart](../getting-started/quickstart.md)
+first.
 
 ## Step 1: Install `semantic_log_generator`
 
-Choose the install mode that fits your situation.
-
-### Option A: Install From This Repository
-
-This is the easiest option when you are already working from this checkout:
+If you are already working from this checkout, this is the simplest install:
 
 ```bash
 python -m pip install -e packages/semantic_log_generator
 ```
 
-### Option B: Install From PyPI
-
-Use this when the package is published and you want a regular install:
+If the package is published and you want a regular install, use:
 
 ```bash
 python -m pip install semantic-log-generator
 ```
 
-### Option C: Install From TestPyPI
-
-Useful when you are testing a pre-release package:
+If you are testing a pre-release package, use:
 
 ```bash
 python -m pip install \
@@ -53,17 +33,19 @@ python -m pip install \
   "semantic-log-generator>=1.0.0,<2.0.0"
 ```
 
-Quick check:
+Confirm the install with:
 
 ```bash
 python -c "from semantic_log_generator import SemanticSEGBLogger; print('ok')"
 ```
 
-Expected: `ok`
+You should see `ok`.
 
-## Step 2: Create A Minimal Script
+## Step 2: Write The Smallest Useful Log
 
-Create a file called `first_log.py` with this content:
+A minimally useful SEGB log has three pieces: an actor, an activity, and something that activity produced. The script
+below creates a human, records a listening activity, attaches a message to that activity, serializes everything to
+Turtle, and sends it to the backend. Create a file called `first_log.py` with this content:
 
 ```python
 from datetime import datetime, timezone
@@ -105,8 +87,9 @@ publisher.publish_turtle(ttl_text)
 print("Log posted. Triples:", len(logger.graph))
 ```
 
-This example is intentionally small. It gives you one human, one activity, and one message, which is enough to
-understand the full publish flow.
+`base_namespace` is the stable URI base for the resources created by the logger. `robot_id` and `robot_name` identify
+the robot in the graph. `default_user` is the user value sent with the API request. The example is intentionally small
+so the publish flow is easy to inspect.
 
 ## Step 3: Run It
 
@@ -123,7 +106,7 @@ export SEGB_API_TOKEN="<logger_or_admin_jwt>"
 python first_log.py
 ```
 
-Expected output:
+You should see:
 
 ```text
 Log posted. Triples: <number>
@@ -148,33 +131,16 @@ You should see Turtle output that includes resources related to `demo_robot` and
 
 ## Step 5: Check The Result In The UI
 
-Open:
-
-- reports: `http://localhost:8080/reports`
-- graph explorer: `http://localhost:8080/kg-graph`
-
-If auth is enabled, first open:
-
-- session page: `http://localhost:8080/session`
-
-Then paste a valid token and return to the UI pages above.
-
-What you should expect:
-
-- the graph page should show nodes and edges related to your new data,
-- the reports page may stay sparse with such a small dataset, but it should no longer be an empty system.
+Open `http://localhost:8080/reports` and `http://localhost:8080/kg-graph`. If auth is enabled, open
+`http://localhost:8080/session` first, paste a valid token, and return to those pages. The graph page should show nodes
+and edges related to your new data. The reports page may stay sparse with such a small dataset, but it should no longer
+be an empty system.
 
 ## What Happened Behind The Scenes
 
-The script did four useful things:
-
-1. created RDF resources with `SemanticSEGBLogger`,
-2. serialized those resources to Turtle,
-3. sent the Turtle payload to `POST /ttl`,
-4. stored the triples in the Knowledge Graph so they can be queried later.
-
-That is the same pattern you will use in a larger robot integration. The only difference is the amount of data and the
-events you choose to log.
+The script created RDF resources with `SemanticSEGBLogger`, serialized them to Turtle, sent that Turtle to `POST /ttl`,
+and stored the triples in the Knowledge Graph. That is the same pattern you will use in a larger robot integration. The
+only difference is the amount of data and the events you choose to log.
 
 ## Common Problems
 
@@ -186,8 +152,5 @@ events you choose to log.
 
 ## Next Steps
 
-After this guide, the most useful next pages are:
-
-1. [Explore the Web UI](explore-the-web-ui.md)
-2. [Shared Context Workflow](shared-context-workflow.md)
-3. [ROS4HRI Integration](ros4hri-integration.md)
+After this guide, the most useful next pages are [Explore the Web UI](explore-the-web-ui.md),
+[Shared Context Workflow](shared-context-workflow.md), and [ROS4HRI Integration](ros4hri-integration.md).

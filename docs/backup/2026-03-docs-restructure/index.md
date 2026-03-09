@@ -9,8 +9,8 @@ Its goal is to **record events and interactions as structured knowledge (RDF)**,
 
 ## Architecture (high-level)
 
-> **TODO (required to render the figure):** add the architecture diagram as
-> `docs/assets/segb-architecture.png` (the image included in your message).
+> Architecture diagram note: this archived page expected the diagram file at
+> `docs/assets/segb-architecture.png`.
 > Once the file exists at that path, include it on this page with:
 >
 > `![SEGB architecture](assets/segb-architecture.png)`

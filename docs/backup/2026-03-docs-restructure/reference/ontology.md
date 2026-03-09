@@ -37,7 +37,7 @@ Use this table as a quick reference when reading Turtle exports (for example, wh
 | `owl` | `http://www.w3.org/2002/07/owl#` |
 | `xsd` | `http://www.w3.org/2001/XMLSchema#` |
 
-## TODO (optional, for high-assurance deployments)
+## Optional Note For High-Assurance Deployments
 
 If you need a pinned, offline copy of the ontology for reproducible audits:
 

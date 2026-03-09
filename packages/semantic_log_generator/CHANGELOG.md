@@ -7,6 +7,8 @@ and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.ht
 
 ## [Unreleased]
 
+## [1.0.5] - 2026-03-09
+
 ### Added
 - `log_message(..., sender=...)` now emits explicit message attribution with `schema:sender` and `prov:wasAttributedTo`.
 

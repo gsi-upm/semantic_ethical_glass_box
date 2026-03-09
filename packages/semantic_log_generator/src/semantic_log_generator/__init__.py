@@ -19,7 +19,7 @@ from .types import (
 try:
     __version__ = version("semantic-log-generator")
 except PackageNotFoundError:
-    __version__ = "1.0.0"
+    __version__ = "1.0.5"
 
 __all__ = [
     "__version__",

@@ -1,42 +1,23 @@
 # Authentication And JWT
 
-## What This Page Explains
+SEGB has two practical modes. For a first contact, keep authentication off. Protected mode matters when you want
+realistic access control between log publishers, readers, and operators.
 
-SEGB can run with or without authentication. This page explains:
+## Learning Mode
 
-- how auth mode is selected,
-- which roles exist,
-- how to generate a token,
-- how to use that token in the API, scripts, and UI.
-
-## How Auth Mode Works
-
-SEGB looks at one setting:
-
-- `SECRET_KEY`
-
-### If `SECRET_KEY` Is Empty Or Unset
-
-Authentication is disabled.
-
-This is convenient for local learning and quick demos. Internally, the backend behaves as if the current user had all
-roles available.
-
-### If `SECRET_KEY` Is Set
-
-Authentication is enabled.
-
-In that mode:
-
-- the backend expects an HS256 JWT,
-- required claims are validated,
-- route-level roles are enforced.
-
-You can check the current mode with:
+If `SECRET_KEY` is empty or unset, authentication is disabled. This is the best choice for local demos and early
+onboarding because the backend behaves as if all roles were available locally. You can check the current mode with:
 
 ```bash
 curl -s http://localhost:5000/auth/mode
 ```
+
+If you are only learning SEGB, you can stop here and continue with the rest of the guides without JWT setup.
+
+## Protected Mode
+
+If `SECRET_KEY` is set, the backend expects an HS256 JWT and enforces route-level roles. Use this mode when you need
+real separation between log publishers, readers, and operators.
 
 ## Roles
 
@@ -71,17 +52,12 @@ Then run the generator from the backend source directory:
 )
 ```
 
-Important details:
-
-- the `SECRET_KEY` here must be exactly the same as the one in `.env`,
-- the token tool expects a sufficiently long secret,
-- `--json` is useful because it prints the token in machine-readable output.
+The `SECRET_KEY` here must be exactly the same as the one in `.env`. The token tool also expects a sufficiently long
+secret, and `--json` is useful because it prints the token in machine-readable output.
 
 ## Useful Token Patterns
 
-### Logger Token
-
-Use this for robot-side publishing:
+Use this pattern for robot-side publishing:
 
 ```bash
 (
@@ -94,9 +70,7 @@ Use this for robot-side publishing:
 )
 ```
 
-### Auditor Token
-
-Use this for reports, graph exploration, and query work:
+Use this pattern for reports, graph exploration, and query work:
 
 ```bash
 (
@@ -109,9 +83,7 @@ Use this for reports, graph exploration, and query work:
 )
 ```
 
-### Admin Token
-
-Use this for shared-context review, graph deletion, Turtle validation, and system logs:
+Use this pattern for shared-context review, graph deletion, Turtle validation, and system logs:
 
 ```bash
 (
@@ -154,25 +126,16 @@ Then read it in code and pass it to `SEGBPublisher`.
 
 ## Use A Token In The UI
 
-Open:
-
-- `http://localhost:8080/session`
-
-Or, in development mode:
-
-- `http://localhost:5173/session`
-
-Paste the token there. The UI stores it in the browser session and then uses it for protected pages.
+Open `http://localhost:8080/session`, or `http://localhost:5173/session` in development mode. Paste the token there.
+The UI stores it in the browser session and then uses it for protected pages.
 
 ## Common Mistakes
 
-- wrong secret: the token was signed with a different `SECRET_KEY`
-- expired token: the page opens, but API requests fail
-- wrong role: for example, using a `logger` token on `/reports`
-- missing claims: SEGB expects at least `username`, `roles`, and `exp`
+The most common failures are using the wrong secret, letting the token expire, using the wrong role for a route, or
+omitting required claims such as `username`, `roles`, and `exp`.
 
 ## Related Pages
 
-- [Centralized Deployment](centralized-deployment.md)
-- [Explore the Web UI](../guides/explore-the-web-ui.md)
-- [API and Roles](../reference/api-and-roles.md)
+For deployment details, continue with [Centralized Deployment](centralized-deployment.md). For browser usage, see
+[Explore the Web UI](../guides/explore-the-web-ui.md). For the exact route matrix, use
+[API and Roles](../reference/api-and-roles.md).

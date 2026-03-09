@@ -12,6 +12,7 @@ exclude_docs: |
 nav:
   - Home: index.md
   - Getting Started:
+      - SEGB in 2 Minutes: getting-started/segb-in-two-minutes.md
       - Quickstart: getting-started/quickstart.md
       - Core Concepts and Roles: getting-started/core-concepts-and-roles.md
   - Guides:
@@ -19,7 +20,6 @@ nav:
       - Explore the Web UI: guides/explore-the-web-ui.md
       - Shared Context Workflow: guides/shared-context-workflow.md
       - ROS4HRI Integration: guides/ros4hri-integration.md
-      - Validation Checklist: guides/validation-checklist.md
   - Operations:
       - Centralized Deployment: operations/centralized-deployment.md
       - Authentication and JWT: operations/authentication-and-jwt.md
@@ -27,5 +27,4 @@ nav:
   - Reference:
       - API and Roles: reference/api-and-roles.md
       - Ontology: reference/ontology.md
-      - Monorepo Structure: reference/monorepo-structure.md
       - Use-Case Matrix: reference/use-case-matrix.md

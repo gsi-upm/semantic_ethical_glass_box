@@ -1,6 +1,6 @@
 [project]
 name = "semantic-log-generator"
-version = "1.0.0"
+version = "1.0.5"
 description = "Production-ready semantic RDF logging toolkit for SEGB-enabled robots"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"

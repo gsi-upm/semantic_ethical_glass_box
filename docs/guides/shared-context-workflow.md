@@ -1,54 +1,28 @@
 # Shared Context Workflow
 
-## What You Will Learn
-
-This guide shows how SEGB handles one of its most useful ideas: recognizing that two different observations may describe
-the same real-world event.
-
-You will see:
-
-1. an automatic match,
-2. an ambiguous case,
-3. a manual review in the UI,
-4. the backend endpoints behind that flow.
+This guide explains how SEGB handles one of its most useful ideas: two different observations may describe the same
+real-world event. You will first see a clean automatic match, then an ambiguous case, and finally the manual review
+flow that resolves that ambiguity.
 
 ## Why Shared Context Exists
 
-Imagine two robots in the same room:
-
-- robot A hears a sentence,
-- robot B hears almost the same sentence a moment later.
-
-If you store those as unrelated events, later analysis becomes confusing. Shared context gives both observations a common
-reference when the system believes they point to the same event.
-
-This is especially helpful for:
-
-- multi-robot speech observations,
-- multi-camera facial expression observations,
-- shared gestures or actions observed by different components.
+Imagine two robots in the same room. Robot A hears a sentence and robot B hears almost the same sentence a moment
+later. If you store those as unrelated events, later analysis becomes confusing. Shared context gives both observations
+a common reference when the system believes they point to the same event. The same idea also helps with multi-camera
+emotion analysis, gesture recognition, or any situation where several components may be observing one shared event.
 
 ## Before You Start
 
-You need:
-
-- backend and UI running
-- the local simulation environment available at `./.segb_env`
-- to run commands from the repository root
-
-If auth is enabled, open `/session` first and set an `admin` token. The shared-context review page requires admin access.
+Follow [Quickstart](../getting-started/quickstart.md) to start the backend, Virtuoso, and the UI, and to create
+`./.segb_env`. If you want the compact explanation of UC-03 and UC-04 as named scenarios, see
+[Use-Case Matrix](../reference/use-case-matrix.md). If auth is enabled, create an `admin` token with
+[Authentication and JWT](../operations/authentication-and-jwt.md) and store it through
+`http://localhost:8080/session` before continuing.
 
 ## Step 1: Open The Shared-Context Page
 
-Open:
-
-- `http://localhost:8080/shared-context`
-
-This is the main UI for the workflow. It shows:
-
-- summary counters,
-- the pending review queue,
-- the decision area for accept or reject actions.
+Open `http://localhost:8080/shared-context`. This is the main UI for the workflow. It shows summary counters, the
+pending review queue, and the decision area where ambiguous cases are accepted or rejected.
 
 ## Step 2: Run The Automatic Match Example
 
@@ -71,16 +45,9 @@ If auth is enabled:
   --no-print-ttl
 ```
 
-What this script is trying to prove is simple:
-
-- the first observation usually creates a shared context,
-- the second one should match that same shared context.
-
-What to look for:
-
-- the script output should report `second_status = matched`,
-- the UI should still show `Pending reviews = 0`,
-- the active contexts count should increase.
+The result you want is simple: the first observation usually creates a shared context, the second one should match that
+same context, the script output should report `second_status = matched`, the UI should still show `Pending reviews = 0`,
+and the active contexts count should increase.
 
 ## Step 3: Run The Ambiguous Example
 
@@ -108,11 +75,8 @@ If auth is enabled:
 This case creates uncertainty on purpose. The observations are similar enough to suggest a connection, but not clean
 enough for the resolver to merge them automatically.
 
-What to expect in the UI:
-
-- `Pending reviews` should increase,
-- a case should appear in the queue,
-- candidate targets should be available in the decision area.
+After it finishes, `Pending reviews` should increase, a case should appear in the queue, and candidate targets should
+be available in the decision area.
 
 Reference screenshot:
 
@@ -120,18 +84,9 @@ Reference screenshot:
 
 ## Step 4: Review The Case Manually
 
-In the decision area you can choose between two actions:
-
-- accept the merge,
-- keep the contexts separate.
-
-After you make a decision, refresh the summary and queue.
-
-Typical results:
-
-- the pending count decreases,
-- accepted merges increase the merged or alias-related counters,
-- the case disappears from the queue.
+In the decision area you can accept the merge or keep the contexts separate. After you make a decision, refresh the
+summary and queue. The pending count should decrease, accepted merges should update the relevant counters, and the case
+should disappear from the queue.
 
 Reference screenshot:
 
@@ -139,14 +94,9 @@ Reference screenshot:
 
 ## Step 5: Check The Backend Endpoints Behind The UI
 
-The UI is the easiest place to work, but it helps to know the backend pieces underneath:
-
-- `POST /shared-context/resolve`
-- `POST /shared-context/reconcile`
-- `GET /shared-context/stats`
-- `GET /shared-context/review/pending`
-- `POST /shared-context/review/{case_id}/accept`
-- `POST /shared-context/review/{case_id}/reject`
+The UI is the easiest place to work, but it helps to know the backend pieces underneath: `POST /shared-context/resolve`,
+`POST /shared-context/reconcile`, `GET /shared-context/stats`, `GET /shared-context/review/pending`,
+`POST /shared-context/review/{case_id}/accept`, and `POST /shared-context/review/{case_id}/reject`.
 
 Useful raw checks:
 
@@ -167,12 +117,8 @@ curl -s http://localhost:5000/shared-context/review/pending \
 
 ## What Success Looks Like
 
-You have completed the workflow correctly if:
-
-- UC-03 reports a matched second observation,
-- UC-04 creates a pending ambiguous case,
-- the UI lets you review that case,
-- the counters update after your decision.
+You have completed the workflow correctly when UC-03 reports a matched second observation, UC-04 creates a pending
+ambiguous case, the UI lets you review that case, and the counters update after your decision.
 
 ## Common Problems
 
@@ -182,4 +128,5 @@ You have completed the workflow correctly if:
 
 ## Next Steps
 
-If you want to see where these use cases fit in the bigger picture, read [Use-Case Matrix](../reference/use-case-matrix.md).
+If you want the compact lookup for all use cases, read [Use-Case Matrix](../reference/use-case-matrix.md). If you want
+the exact permissions behind the UI and endpoints used here, read [API and Roles](../reference/api-and-roles.md).
