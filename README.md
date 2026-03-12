@@ -75,7 +75,7 @@ If `/reports` shows populated cards and `/kg-graph` shows connected nodes, you h
 ## Documentation
 
 The full documentation is available on Read the Docs:
-[semantic-ethical-black-box-segb.readthedocs.io/en/stable](https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/)
+[semantic-ethical-black-box-segb.readthedocs.io/en/latest](https://semantic-ethical-black-box-segb.readthedocs.io/en/latest/)
 
 Use these pages as the main reading path:
 
