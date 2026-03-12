@@ -118,12 +118,10 @@ Auth enabled (requires `admin`):
 1. Open `http://localhost:8080/reports`.
 2. Click `Refresh reports`.
 
-Expected: the reports dashboard renders non-empty content. The reference screenshot below shows sections labeled:
+Expected: the reports dashboard renders non-empty content. The screenshot below shows sections labeled:
 
 - `Report 1: Participants`
 - `Report 2: ML Usage`
-
-Reference screenshot:
 
 ![SEGB Reports Dashboard](assets/screenshots/ui-reports.png)
 

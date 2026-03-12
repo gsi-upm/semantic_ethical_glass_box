@@ -60,6 +60,7 @@ class MissionController(Node):
                 or data.get("utterance")
                 or data.get("message")
                 or data.get("object")
+                or data.get("input")
                 or msg.data
                 or ""
             ).strip()
@@ -269,7 +270,7 @@ from semantic_log_generator import (
     SEGBPublisher,
     SemanticSEGBLogger,
 )
-from semantic_log_generator.namespaces import EMOML
+from semantic_log_generator.namespaces import EMOML, ORO
 ...
 ```
 
@@ -288,7 +289,7 @@ class MissionController(Node):
 
     SEGB_ENABLE_PUBLISH = True
     SEGB_API_URL = "http://localhost:5000"
-    SEGB_API_TOKEN = "<your_jwt_or_empty>"
+    SEGB_API_TOKEN = "<same hardcoded demo token block used in the current mission_controller.py>"
     SEGB_API_USER = "demo_robot"
     SEGB_TIMEOUT_SECONDS = 15.0
     ...
@@ -340,7 +341,7 @@ Insert inside callback around your dialogue flow:
 def on_intent(self, msg: Intent) -> None:
     ...
     now = datetime.now(timezone.utc)
-    human_uri = self._human(human_hint, name)
+    human_uri = self._human(human_hint, name, fallback_hint=self._single_face_hint())
 
     shared = self.segb.get_shared_event_uri(...)
 
@@ -359,10 +360,12 @@ def on_intent(self, msg: Intent) -> None:
 
 Why: links input, decision, response, and robot state in one traceable semantic chain.
 
-Important: when logging messages, set explicit sender attribution:
+Important: the current source does all of these together:
 
 - human input message: `sender=human_uri`
 - robot output message: `sender=self.segb.robot_uri`
+- human input type: `message_types=[ORO.InitialMessage]`
+- robot output type: `message_types=[ORO.ResponseMessage]`
 
 Details: [Basic Use](usage.md), [Shared Context Resolution](../backend/shared-context.md).
 
@@ -395,7 +398,16 @@ Details: [Shared Context Resolution](../backend/shared-context.md).
 #### 4.6 Add helper methods near class end
 
 ```python
-def _human(self, hint: str, display_name: str) -> Any:
+def _normalize_human_key(self, value: str | None) -> str:
+    ...
+
+def _is_generic_human_key(self, value: str) -> bool:
+    ...
+
+def _single_face_hint(self) -> str | None:
+    ...
+
+def _human(self, hint: str, display_name: str, fallback_hint: str | None = None) -> Any:
     ...
 
 def _state(self, *, event_id: str, activity: Any, note: str, extra: dict[str, Any] | None = None) -> None:
@@ -408,6 +420,7 @@ def _publish_segb_safe(self) -> None:
 Why:
 
 - `_human`: stable canonical human URIs.
+- `_single_face_hint`: avoids splitting one visible person into `unknown` plus a face-specific human node.
 - `_state`: normalized robot-state logging.
 - `_publish_segb_safe`: async publish so callbacks stay responsive.
 
@@ -437,11 +450,7 @@ Expected:
 - Reports show non-empty interaction metrics.
 - KG Graph shows humans, activities, observations, messages, and states.
 
-Reports reference screenshot:
-
 ![SEGB Reports](../assets/screenshots/ui-reports.png)
-
-KG Graph reference screenshot:
 
 ![SEGB KG Graph](../assets/screenshots/ui-kg-graph.png)
 

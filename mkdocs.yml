@@ -5,6 +5,15 @@ repo_name: gsi-upm/semantic_ethical_glass_box
 
 theme:
   name: readthedocs
+  logo: assets/segb-logo.png
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
 
 exclude_docs: |
   backup/
@@ -12,9 +21,13 @@ exclude_docs: |
 nav:
   - Home: index.md
   - Getting Started:
-      - SEGB in 2 Minutes: getting-started/segb-in-two-minutes.md
       - Quickstart: getting-started/quickstart.md
       - Core Concepts and Roles: getting-started/core-concepts-and-roles.md
+  - Package:
+      - Overview: package/index.md
+      - Install semantic_log_generator: package/installation.md
+      - API Reference: package/api-reference.md
+      - Use semantic_log_generator: package/usage.md
   - Guides:
       - Publish Your First Log: guides/publish-your-first-log.md
       - Explore the Web UI: guides/explore-the-web-ui.md

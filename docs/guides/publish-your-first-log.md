@@ -6,46 +6,28 @@ through the API and the UI.
 
 ## Before You Start
 
-You need a running SEGB backend at `http://localhost:5000`, Python `3.10+`, and, if auth is enabled, a JWT with role
-`logger` or `admin`. If you still need the centralized stack, follow [Quickstart](../getting-started/quickstart.md)
-first.
+You need:
+
+- a running SEGB backend at `http://localhost:5000` (see [Quickstart](../getting-started/quickstart.md))
+- Python `3.10+`
+- if auth is enabled, a JWT with role `logger` or `admin`
+
 
 ## Step 1: Install `semantic_log_generator`
 
-If you are already working from this checkout, this is the simplest install:
+If the package is not installed yet, use the main installation guide first:
+[Install `semantic_log_generator`](../package/installation.md).
+
+Fastest option from PyPI (see [Install `semantic_log_generator`](../package/installation.md) for other options):
 
 ```bash
-python -m pip install -e packages/semantic_log_generator
+pip install semantic-log-generator
 ```
-
-If the package is published and you want a regular install, use:
-
-```bash
-python -m pip install semantic-log-generator
-```
-
-If you are testing a pre-release package, use:
-
-```bash
-python -m pip install \
-  --index-url https://test.pypi.org/simple/ \
-  --extra-index-url https://pypi.org/simple \
-  "semantic-log-generator>=1.0.0,<2.0.0"
-```
-
-Confirm the install with:
-
-```bash
-python -c "from semantic_log_generator import SemanticSEGBLogger; print('ok')"
-```
-
-You should see `ok`.
-
 ## Step 2: Write The Smallest Useful Log
 
 A minimally useful SEGB log has three pieces: an actor, an activity, and something that activity produced. The script
 below creates a human, records a listening activity, attaches a message to that activity, serializes everything to
-Turtle, and sends it to the backend. Create a file called `first_log.py` with this content:
+Turtle, and sends it to the backend. Create a file called `first_log.py` with this content (for advanced examples, see [Use `semantic_log_generator`](../packages/usage.md)):
 
 ```python
 from datetime import datetime, timezone

@@ -164,8 +164,6 @@ UI check after UC-04 (`--decision none`):
 - a case should appear in `Pending Queue`
 - candidate options should appear in `Decision Area`
 
-Reference screenshot (pending case in Resolver Console):
-
 ![SEGB Shared Context Pending Case](../assets/screenshots/ui-shared-context-pending.png)
 
 ### 4) Resolve from the UI and verify counters
@@ -182,8 +180,6 @@ What should change:
 - accepted merge usually increases `Merged contexts`
 - accepted merge usually increases `Alias mappings`
 - `Pending reviews` should decrease (or remain >0 if there are older pending cases)
-
-Reference screenshot (after review activity):
 
 ![SEGB Shared Context After Review](../assets/screenshots/ui-shared-context-review.png)
 

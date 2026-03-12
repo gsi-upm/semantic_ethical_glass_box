@@ -13,10 +13,12 @@ emotion analysis, gesture recognition, or any situation where several components
 
 ## Before You Start
 
-Follow [Quickstart](../getting-started/quickstart.md) to start the backend, Virtuoso, and the UI, and to create
-`./.segb_env`. If auth is enabled, create an `admin` token with
-[Authentication and JWT](../operations/authentication-and-jwt.md) and store it through
-`http://localhost:8080/session` before continuing.
+You need:
+
+- [Quickstart](../getting-started/quickstart.md) completed
+- If auth is enabled:
+    - an `admin` token created with [Authentication and JWT](../operations/authentication-and-jwt.md)
+    - that token stored through `http://localhost:8080/session`
 
 ## Step 1: Open The Shared-Context Page
 
@@ -25,7 +27,7 @@ pending review queue, and the decision area where ambiguous cases are accepted o
 
 ## Step 2: Run The Automatic Match Example
 
-This example uses UC-03. It sends two very similar observations close in time.
+This example uses UC-03 demo dataset. It sends two very similar observations close in time.
 
 If auth is disabled:
 
@@ -44,9 +46,24 @@ If auth is enabled:
   --no-print-ttl
 ```
 
-The result you want is simple: the first observation usually creates a shared context, the second one should match that
-same context, the script output should report `second_status = matched`, the UI should still show `Pending reviews = 0`,
-and the active contexts count should increase.
+An automatic match means the resolver is confident enough to say: "these two observations refer to the same real-world
+event, so I can reuse one shared-context URI without asking a human reviewer." In UC-03 that confidence comes from a
+clean combination of evidence:
+
+- same `event_kind`
+- same human subject
+- same modality
+- very similar text
+- very small time gap
+
+So the expected flow is:
+
+1. the first observation usually returns `created` because there is no previous context yet
+2. the second observation returns `matched`
+3. both observations point to the same `shared_context_uri`
+
+That is why the UI should still show `Pending reviews = 0`: there is nothing uncertain to review. This is not just
+"similar observations exist"; it is "the resolver is confident enough to merge them automatically."
 
 ## Step 3: Run The Ambiguous Example
 
@@ -71,27 +88,35 @@ If auth is enabled:
   --no-print-ttl
 ```
 
-This case creates uncertainty on purpose. The observations are similar enough to suggest a connection, but not clean
-enough for the resolver to merge them automatically.
+An ambiguous match means the resolver sees a plausible candidate match, but not enough evidence to merge automatically.
+This is important: `ambiguous` does not mean "unrelated." It means "possibly the same event, but confidence is not high
+enough to decide safely without review."
+
+In UC-04 the ambiguity is created on purpose. The observations are still close in time and similar in text, so the
+resolver suspects a connection. But one of the strongest alignment signals is weakened or missing, so the evidence is no
+longer clean enough for an automatic `matched` result. In the example, the second observation is intentionally sent with
+incomplete subject alignment, which makes the candidate believable but not definitive.
+
+The practical interpretation is:
+
+1. the first observation creates an active shared context
+2. the second observation is similar enough to be considered as a candidate for that context
+3. instead of returning `matched`, the resolver returns `ambiguous`
+4. the system opens a pending review case so a human can accept or reject the merge
+
+If the two observations were clearly different, you would normally see `created`, not `ambiguous`. `Ambiguous` sits in
+the middle between those two outcomes: stronger than "no relation", weaker than "safe automatic merge."
 
 After it finishes, `Pending reviews` should increase, a case should appear in the queue, and candidate targets should
 be available in the decision area.
 
-Reference screenshot:
-
 ![SEGB Shared Context Pending Case](../assets/screenshots/ui-shared-context-pending.png)
 
-## Step 4: Review The Case Manually
+At that point, stay on the same page and review the case manually. In the decision area you can accept the merge or keep
+the contexts separate. After you make a decision, refresh the summary and queue. The pending count should decrease,
+accepted merges should update the relevant counters, and the case should disappear from the queue.
 
-In the decision area you can accept the merge or keep the contexts separate. After you make a decision, refresh the
-summary and queue. The pending count should decrease, accepted merges should update the relevant counters, and the case
-should disappear from the queue.
-
-Reference screenshot:
-
-![SEGB Shared Context After Review](../assets/screenshots/ui-shared-context-review.png)
-
-## Step 5: Check The Backend Endpoints Behind The UI
+## Step 4: Check The Backend Endpoints Behind The UI
 
 The UI is the easiest place to work, but it helps to know the backend pieces underneath: `POST /shared-context/resolve`,
 `POST /shared-context/reconcile`, `GET /shared-context/stats`, `GET /shared-context/review/pending`,
@@ -129,4 +154,6 @@ ambiguous case, the UI lets you review that case, and the counters update after 
 
 If you want the compact lookup for all use cases, inspect the simulation entry points under
 `examples/simulations`. If you want the exact permissions behind the UI and endpoints used here, read
-[API and Roles](../reference/api-and-roles.md).
+[API and Roles](../reference/api-and-roles.md). If you want to see how SEGB fit into a fuller robot pipeline
+rather than a small demo script, continue with [ROS4HRI Integration](ros4hri-integration.md), which shows a complete
+integration in a more realistic runtime environment.

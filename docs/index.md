@@ -8,6 +8,8 @@ SEGB is a semantic logging stack for human-robot interaction. It captures intera
 knowledge so you can inspect not only what happened, but also who did it, which model was involved, what followed, and
 how the pieces belong to the same trace.
 
+The practical contract is straightforward. Consider a scenario in which multiple humans and social robots interact with each other. The robots emit Turtle (TTL) logs describing internal processes, actors, activities, messages, and the links between them. The backend ingests and processes these logs and stores them in a global Knowledge Graph (KG). This KG provides a semantic representation of the scenario, relating actors and activities and capturing the context in which one event triggers another. A web UI then provides high-level reports and tools to visualise and filter the KG, making scenario auditing and explanation easier.
+
 ## Why Teams Use SEGB
 
 SEGB is for systems that need more than plain application logs. It is useful when you want to reconstruct what
@@ -32,46 +34,60 @@ of aspirational, and it helps you detect problematic behavior, understand where 
 | inspect interactions visually | the full stack, including the web UI |
 
 SEGB is not a robot framework, a sensor driver, or a ROS replacement. Your robot software still decides what to
-detect, what to say, and when to act. SEGB records those decisions and observations in a structured form that can be
-connected and reviewed later.
+detect, what to say, and when to act. `semantic_log_generator` does not make those decisions for you; it turns the
+facts your software already knows into TTL that can be ingested, queried, and reviewed later.
 
 ## Architecture In One Pass
 
-SEGB usually runs as a four-part loop. `semantic_log_generator` builds RDF logs inside a robot or simulator, the
-backend receives Turtle payloads and stores them in the graph, and the web UI turns that graph into reports, graph
-views, queries, and review flows. In this repository, the storage layer behind the backend is Virtuoso, but users
-normally interact with the backend rather than with the database directly.
+SEGB separates log production, ingestion, storage, and inspection.
 
-The usual flow looks like this:
+At the edge, `semantic_log_generator` materializes interaction facts as RDF resources and links: robots, humans,
+activities, messages, model usage, observations, and result entities. Those triples are serialized as Turtle and sent
+to the backend through `/ttl` or the shared-context endpoints. The backend validates and stores them in the Knowledge
+Graph. In this repository, the storage layer behind the backend is Virtuoso, but most users interact with the backend
+API and the web UI rather than with the database directly.
 
-```text
-Robot or simulator
-  -> semantic_log_generator
-  -> POST /ttl or shared-context endpoints
-  -> backend API
-  -> Knowledge Graph
-  -> reports, graph view, queries, audits
-```
+The usual flow is:
+
+1. your robot or simulator creates semantic logs with `semantic_log_generator`,
+2. those logs are sent to the backend through `/ttl` or shared-context endpoints,
+3. the backend stores them in the Knowledge Graph,
+4. the UI reads that graph and turns it into reports, graph views, queries, and audits.
 
 This repository contains the full stack in one place: the backend API in `apps/backend`, the frontend UI in
 `apps/frontend`, the reusable logging package in `packages/semantic_log_generator`, and the simulations, notebooks, and
 tests in `examples` and `tests`.
 
+## One Interaction, End To End
+
+Imagine a person tells a robot, "I am worried about tomorrow's exam." The robot records the utterance, an
+emotion-analysis component interprets it as anxiety, and the robot produces a calming reply.
+
+Without SEGB, those artifacts usually end up scattered across separate subsystems: ASR output in one place, model
+output in another, and the robot response somewhere else. SEGB keeps the same episode as one connected graph.
+
+A minimal trace for that interaction contains:
+
+- the human agent,
+- the robot agent,
+- the listening activity,
+- the input message,
+- the emotion-analysis activity,
+- the model usage,
+- the emotion annotation,
+- the response activity,
+- the response message,
+- the temporal, contextual, and causal links.
+
+This makes the scenario queryable end to end: what the robot heard, which component interpreted it, which model was
+involved, and what response followed. In the Web UI, those same links appear as high-level reports and inspectable
+graph views.
+
+
 ## Recommended First Path
 
-If you are new to SEGB, start with [SEGB in 2 Minutes](getting-started/segb-in-two-minutes.md), continue with the
+If you are new to SEGB, continue with the
 [Quickstart](getting-started/quickstart.md), then move to [Publish Your First Log](guides/publish-your-first-log.md)
-and [Explore the Web UI](guides/explore-the-web-ui.md). That sequence gives you the product story first, the working
-stack second, and the integration path third.
+and [Explore the Web UI](guides/explore-the-web-ui.md). 
 
-Reference screenshot:
 
-![SEGB Reports Dashboard](assets/screenshots/ui-reports.png)
-
-## Further Reading
-
-If you want a conceptual glossary after the first run, read
-[Core Concepts and Roles](getting-started/core-concepts-and-roles.md). If you are operating the stack, go to
-[Centralized Deployment](operations/centralized-deployment.md),
-[Authentication and JWT](operations/authentication-and-jwt.md). If you need protocol and data details, use the
-reference section: [API and Roles](reference/api-and-roles.md) and [Ontology](reference/ontology.md).

@@ -42,8 +42,6 @@ python3 -m pip install pyjwt fastapi
 Use the same `SECRET_KEY` value configured in `.env`.  
 Equivalent flow is documented in [Centralized Deployment: Step 5](../deployment/centralized.md#5-generate-jwt-only-if-auth-enabled).
 
-Session page reference screenshot:
-
 ![SEGB Session](../assets/screenshots/ui-session.png)
 
 ### 3) Use core pages
@@ -68,8 +66,6 @@ For a detailed explanation of what each report means and what dataset semantics 
 2. Open `/kg-graph` and check entity/edge growth.
 3. Run one read-only query in `/query`.
 4. If needed, inspect `/shared-context` and `/system/logs`.
-
-Recommended operator-flow reference screenshot:
 
 ![SEGB Operator Flow](../assets/screenshots/ui-operator-flow.png)
 

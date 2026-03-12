@@ -106,11 +106,7 @@ Expected:
 - Reports page shows non-empty charts/cards.
 - KG Graph page shows nodes and edges generated from your log.
 
-Reports reference screenshot:
-
 ![SEGB Reports](../assets/screenshots/ui-reports.png)
-
-KG Graph reference screenshot:
 
 ![SEGB KG Graph](../assets/screenshots/ui-kg-graph.png)
 

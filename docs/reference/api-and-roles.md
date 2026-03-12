@@ -2,8 +2,7 @@
 
 ## What This Page Is
 
-This is the compact reference for the backend routes and the UI access model. If you want the narrative explanations, use
-the guides. If you want the permissions and purpose at a glance, use this page.
+This is the compact reference for the backend routes and the UI access model.
 
 ## Authentication Rule
 
@@ -97,9 +96,9 @@ These are the request shapes you will use most often.
 
 Use these simple rules when deciding which role you need:
 
-- if you publish logs, use `logger`,
-- if you inspect and query data, use `auditor`,
-- if you operate, validate, delete, or review, use `admin`.
+- If you publish logs, use `logger`
+- If you inspect and query data, use `auditor`
+- If you operate, validate, delete, or review, use `admin`
 
 ## Related Pages
 

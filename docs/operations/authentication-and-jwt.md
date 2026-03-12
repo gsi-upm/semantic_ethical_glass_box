@@ -131,8 +131,11 @@ The UI stores it in the browser session and then uses it for protected pages.
 
 ## Common Mistakes
 
-The most common failures are using the wrong secret, letting the token expire, using the wrong role for a route, or
-omitting required claims such as `username`, `roles`, and `exp`.
+The most common failures are:
+
+- Using the wrong secret
+- Letting the token expire
+- Using the wrong role for a route
 
 ## Related Pages
 

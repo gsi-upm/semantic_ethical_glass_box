@@ -2,23 +2,23 @@
 
 ## When To Use This Page
 
-Use this page when you want to operate the full SEGB stack in Docker, not just try the shortest happy path.
+Use this page when you want to operate the full SEGB stack in Docker.
 
 If your goal is simply to get SEGB running once and see data in the UI, start with
-[Quickstart](../getting-started/quickstart.md). This page is for the more operational view:
+[Quickstart](../getting-started/quickstart.md). This page is for:
 
-- choosing the right compose file,
-- understanding `.env`,
-- checking health,
-- stopping or resetting the stack safely.
+- choosing the right compose file
+- understanding `.env`
+- checking health
+- stopping or resetting the stack safely
 
 ## What Gets Deployed
 
 The centralized stack includes:
 
-- the backend API,
-- the Virtuoso Knowledge Graph,
-- the SEGB web UI.
+- the backend API
+- the Virtuoso Knowledge Graph
+- the SEGB web UI
 
 ## Before You Start
 
@@ -46,7 +46,7 @@ Use this when you want the published images from GHCR:
 
 - `docker-compose.yaml`
 
-This is the best choice for demos, quick evaluation, and reproducible local runs.
+This is the best choice for demos, quick evaluation, and reproducible local runs. The web UI runs on port `8080` and set the API server on port `5000`
 
 ### Development Compose
 
@@ -54,7 +54,7 @@ Use this when you are editing the software itself and want hot reload:
 
 - `docker-compose.dev.yml`
 
-This mode runs the frontend on `http://localhost:5173` instead of `http://localhost:8080`.
+This mode runs the frontend on port `5173` and also set the API server on port `5000`
 
 ## Step 2: Create `.env`
 
@@ -126,7 +126,7 @@ The fastest option is the report-ready demo dataset used in [Quickstart](../gett
 
 Typical URLs:
 
-- backend OpenAPI: `http://localhost:5000/docs`
+- Backend OpenAPI docs: `http://localhost:5000/docs`
 - UI in production-like mode: `http://localhost:8080`
 - UI in development mode: `http://localhost:5173`
 
@@ -181,8 +181,8 @@ This is destructive. It deletes the persisted database volume.
 
 - backend not ready: check `docker compose -f docker-compose.yaml logs -f amor-segb`
 - Virtuoso not reachable: check `docker compose -f docker-compose.yaml logs -f amor-segb-virtuoso`
-- port conflicts: run `lsof -i :5000 -i :8080 -i :8890 -i :1111`
-- auth errors: read [Authentication and JWT](authentication-and-jwt.md)
+- Port conflicts: run `lsof -i :5000 -i :8080 -i :8890 -i :1111`
+- Auth errors: read [Authentication and JWT](authentication-and-jwt.md)
 
 ## Related Pages
 

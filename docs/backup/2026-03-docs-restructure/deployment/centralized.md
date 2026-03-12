@@ -199,8 +199,6 @@ You can do the same reset from the web UI (`/logs/delete`):
 - Type `DELETE`
 - Click `Delete all TTLs`
 
-Reference screenshot:
-
 ![SEGB Delete TTLs](../assets/screenshots/ui-delete-ttls.png)
 
 ## Validation

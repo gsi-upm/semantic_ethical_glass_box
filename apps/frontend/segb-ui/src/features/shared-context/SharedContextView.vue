@@ -85,7 +85,7 @@
           <div class="panel">
             <p class="label">Source context (requires decision)</p>
             <p class="line"><strong>Event:</strong> {{ eventKindLabel(sourceRecord?.event_kind) }}</p>
-            <p class="line"><strong>Subject:</strong> {{ humanizeUri(sourceRecord?.subject_uri, 'Not available') }}</p>
+            <p class="line"><strong>Subject:</strong> {{ humanizeSubjectUri(sourceRecord?.subject_uri, 'Not available') }}</p>
             <p class="line"><strong>Modality:</strong> {{ humanizeText(sourceRecord?.modality, 'Not available') }}</p>
             <p class="line"><strong>Linked observations:</strong> {{ formatCount(sourceRecord?.observation_count ?? 0) }}</p>
             <p class="line"><strong>Latest detection:</strong> {{ formatWhen(sourceRecord?.observed_at) }}</p>
@@ -97,7 +97,14 @@
             <p v-if="selectedCase.candidates.length === 0" class="empty">No candidates available for this case.</p>
 
             <article v-for="(candidate, index) in selectedCase.candidates" :key="candidate.context_uri" class="candidate-row">
-              <div class="candidate-card" :class="{ active: candidate.context_uri === selectedCandidateUri }">
+              <button
+                type="button"
+                class="candidate-card candidate-select"
+                :class="{ active: candidate.context_uri === selectedCandidateUri }"
+                :disabled="loadingDecision"
+                :aria-pressed="candidate.context_uri === selectedCandidateUri"
+                @click="selectedCandidateUri = candidate.context_uri"
+              >
                 <div class="candidate-top">
                   <p class="candidate-title">Candidate {{ index + 1 }}</p>
                   <span class="score-pill">{{ formatScore(candidate.score) }} similarity</span>
@@ -108,16 +115,9 @@
                   Time: {{ formatBreakdown(candidate.score_breakdown.time) }} · Text: {{ formatBreakdown(candidate.score_breakdown.text) }} ·
                   Subject: {{ formatBreakdown(candidate.score_breakdown.subject) }} · Modality: {{ formatBreakdown(candidate.score_breakdown.modality) }}
                 </p>
-              </div>
+              </button>
 
               <div class="candidate-actions">
-                <button
-                  class="btn ghost small"
-                  :disabled="loadingDecision"
-                  @click="selectedCandidateUri = candidate.context_uri"
-                >
-                  {{ candidate.context_uri === selectedCandidateUri ? 'Evidence visible' : 'View evidence' }}
-                </button>
                 <button class="btn small" :disabled="loadingDecision" @click="acceptCandidate(candidate.context_uri)">
                   {{ loadingDecision ? 'Applying…' : 'Accept this merge' }}
                 </button>
@@ -136,10 +136,9 @@
               <article v-for="(observation, index) in sourceRecord?.observations ?? []" :key="`source-${index}`" class="obs-card">
                 <p class="obs-time">{{ formatWhen(observation.observed_at) }}</p>
                 <p class="obs-line"><strong>Robot:</strong> {{ humanizeUri(observation.robot_uri, 'Not available') }}</p>
-                <p class="obs-line"><strong>Subject:</strong> {{ humanizeUri(observation.subject_uri, 'Not available') }}</p>
+                <p class="obs-line"><strong>Subject:</strong> {{ humanizeSubjectUri(observation.subject_uri, 'Not available') }}</p>
                 <p class="obs-line"><strong>Modality:</strong> {{ humanizeText(observation.modality, 'Not available') }}</p>
-                <p class="obs-line"><strong>Observation:</strong> {{ humanizeUri(observation.observation_uri, 'No identifier') }}</p>
-                <p class="obs-line"><strong>Message:</strong> {{ humanizeText(observation.text, 'No text') }}</p>
+                <p class="obs-line"><strong>Message:</strong> {{ displayObservationText(observation.text) }}</p>
               </article>
             </div>
 
@@ -155,10 +154,9 @@
               <article v-for="(observation, index) in candidateRecord?.observations ?? []" :key="`candidate-${index}`" class="obs-card">
                 <p class="obs-time">{{ formatWhen(observation.observed_at) }}</p>
                 <p class="obs-line"><strong>Robot:</strong> {{ humanizeUri(observation.robot_uri, 'Not available') }}</p>
-                <p class="obs-line"><strong>Subject:</strong> {{ humanizeUri(observation.subject_uri, 'Not available') }}</p>
+                <p class="obs-line"><strong>Subject:</strong> {{ humanizeSubjectUri(observation.subject_uri, 'Not available') }}</p>
                 <p class="obs-line"><strong>Modality:</strong> {{ humanizeText(observation.modality, 'Not available') }}</p>
-                <p class="obs-line"><strong>Observation:</strong> {{ humanizeUri(observation.observation_uri, 'No identifier') }}</p>
-                <p class="obs-line"><strong>Message:</strong> {{ humanizeText(observation.text, 'No text') }}</p>
+                <p class="obs-line"><strong>Message:</strong> {{ displayObservationText(observation.text) }}</p>
               </article>
             </div>
           </div>
@@ -283,9 +281,38 @@ function humanizeUri(uri: string | null | undefined, fallback = '-'): string {
   return titleCase(normalizeWords(compact))
 }
 
+function humanizeSubjectUri(uri: string | null | undefined, fallback = '-'): string {
+  const label = humanizeUri(uri, fallback)
+  if (label === fallback) {
+    return fallback
+  }
+  // Hide UC nonce suffixes in subject labels (e.g., "Human Maria Review 06d1a049").
+  const cleaned = label.replace(/\s+(review|auto)\s+[a-f0-9]{8,16}$/i, '').trim()
+  const typedMatch = cleaned.match(/^([a-z][a-z0-9]*)\s+(.+)$/i)
+  if (!typedMatch) {
+    return cleaned || label
+  }
+  const entityType = titleCase(typedMatch[1] ?? '')
+  const entityName = (typedMatch[2] ?? '').trim()
+  const allowedTypes = new Set(['Human', 'Robot', 'Person', 'Agent'])
+  if (!entityName || !allowedTypes.has(entityType)) {
+    return cleaned || label
+  }
+  return `${entityName} (${entityType})`
+}
+
 function humanizeText(value: string | null | undefined, fallback = '-'): string {
   const trimmed = value?.trim() ?? ''
   return trimmed || fallback
+}
+
+function displayObservationText(value: string | null | undefined): string {
+  const text = humanizeText(value, 'No text')
+  if (text === 'No text') {
+    return text
+  }
+  // Hide simulation run suffixes (e.g., "ref=06d1a049") from the operator-focused view.
+  return text.replace(/\s*[?.,;:!-]?\s*ref=[a-z0-9_-]+\s*$/i, '').trim()
 }
 
 function formatWhen(raw: string | null | undefined): string {
@@ -332,7 +359,7 @@ function caseSourceLabel(reviewCase: SharedContextReviewCase): string {
   if (!record) {
     return 'No data'
   }
-  return `${humanizeUri(record.subject_uri, 'Subject unavailable')} · ${formatWhen(record.observed_at)}`
+  return `${humanizeSubjectUri(record.subject_uri, 'Subject unavailable')} · ${formatWhen(record.observed_at)}`
 }
 
 function ensureSelection(): void {
@@ -621,6 +648,13 @@ onMounted(() => {
   border-radius: 10px;
   padding: 0.55rem 0.62rem;
   background: #ffffff;
+}
+
+.candidate-select {
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .candidate-card.active {

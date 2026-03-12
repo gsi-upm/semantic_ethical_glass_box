@@ -21,8 +21,6 @@ Graph.
 Expected: the page renders one card per report. If a query fails, you will see a warning banner identifying which report
 block could not be loaded.
 
-Reference screenshot:
-
 ![SEGB Reports Dashboard](../assets/screenshots/ui-reports.png)
 
 ## What a “report” means in SEGB

@@ -3,29 +3,28 @@
 This page gives you the vocabulary that appears throughout the rest of the documentation. The goal is not to turn you
 into an RDF specialist, but to give you a stable mental model once you have seen SEGB running.
 
-## One Interaction To Keep In Mind
-
-Imagine a human says, "I am worried about tomorrow's exam," a robot listens, an emotion model labels the situation as
-anxiety, and the robot answers with a calming sentence. In a conventional system, that trace might be split across
-application logs, model outputs, and separate databases. In SEGB, it can be stored as one connected graph.
-
 ## Semantic Log, Turtle, And Knowledge Graph
 
 A semantic log is a structured log represented as RDF instead of plain text. That matters because RDF stores
 relationships, not just isolated lines. A message can point back to the activity that generated it, that activity can
 point to the robot that performed it, and a model output can point to the model that produced it. Turtle, often written
-as TTL, is the text format SEGB uses when those logs move from the robot side to the backend. Once inserted, the triples
-live in a Knowledge Graph stored by Virtuoso.
+as TTL, is the text format SEGB uses when those logs move from the robot side to the backend. Once inserted, the triples are put together to conform
+a global Knowledge Graph (KG) stored by Virtuoso.
 
-When you open the reports page or the graph explorer, you are not looking at separate files. You are looking at views
-built from that graph.
+In normal package usage, you do not need to think in raw ontology terms all the time. `semantic_log_generator` exposes
+Python methods and enums such as `ActivityKind` which mostly abstract from ontology-specific concepts. 
 
-## Report And Shared Context
+## Reports (Web UI)
 
 A report in SEGB is a fixed UI view generated from read-only graph queries. Participant summaries, conversation history,
-emotion timelines, ML usage, and robot state are all examples of reports. Shared context is the mechanism SEGB uses
-when separate observations probably describe the same real-world event, such as two robots hearing the same sentence
-almost at the same time.
+emotion timelines, ML usage, and robot state are all examples of reports. Reports are inspection views over what is
+already stored in the graph.
+
+## Shared Context
+Shared context is a backend resolution mechanism used when separate observations from different robots may refer to the same real-world event,
+such as two robots hearing almost the same sentence at nearly the same time. If the resolution determines that the two observations are 
+corresponding to the same event, a "shared context" node is created in the graph, which is direcly related with the nodes of both observations.
+
 
 ## The Four Runtime Pieces
 
