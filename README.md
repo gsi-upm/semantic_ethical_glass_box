@@ -12,21 +12,6 @@ how the full trace fits together. This repository contains the full stack in one
 In practice, a robot or simulator builds semantic logs, the backend receives them and manages the graph behind the
 scenes, and the UI turns that data into reports, graph views, queries, and audit workflows.
 
-## If You Only Need The Python Package
-
-Install the package from PyPI:
-
-```bash
-python -m pip install semantic-log-generator
-```
-
-Then start with:
-
-- [Package Overview](docs/package/index.md)
-- [Install `semantic_log_generator`](docs/package/installation.md)
-- [API Reference](docs/package/api-reference.md)
-- [Use `semantic_log_generator`](docs/package/usage.md)
-
 ## Quickstart
 
 If you want the shortest meaningful run, this is the right path. It starts the centralized stack, loads the UC-02 demo
