@@ -10,6 +10,8 @@ how the pieces belong to the same trace.
 
 The practical contract is straightforward. Consider a scenario in which multiple humans and social robots interact with each other. The robots emit Turtle (TTL) logs describing internal processes, actors, activities, messages, and the links between them. The backend ingests and processes these logs and stores them in a global Knowledge Graph (KG). This KG provides a semantic representation of the scenario, relating actors and activities and capturing the context in which one event triggers another. A web UI then provides high-level reports and tools to visualise and filter the KG, making scenario auditing and explanation easier.
 
+![Architecture](assets/final_architecture.png)
+
 ## Why Teams Use SEGB
 
 SEGB is for systems that need more than plain application logs. It is useful when you want to reconstruct what
@@ -89,5 +91,4 @@ graph views.
 If you are new to SEGB, continue with the
 [Quickstart](getting-started/quickstart.md), then move to [Publish Your First Log](guides/publish-your-first-log.md)
 and [Explore the Web UI](guides/explore-the-web-ui.md). 
-
 

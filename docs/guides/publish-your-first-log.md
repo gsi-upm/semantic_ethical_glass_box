@@ -27,7 +27,7 @@ pip install semantic-log-generator
 
 A minimally useful SEGB log has three pieces: an actor, an activity, and something that activity produced. The script
 below creates a human, records a listening activity, attaches a message to that activity, serializes everything to
-Turtle, and sends it to the backend. Create a file called `first_log.py` with this content (for advanced examples, see [Use `semantic_log_generator`](../packages/usage.md)):
+Turtle, and sends it to the backend. Create a file called `first_log.py` with this content (for advanced examples, see [Use `semantic_log_generator`](../package/usage.md)):
 
 ```python
 from datetime import datetime, timezone
