@@ -45,7 +45,7 @@ SEGB separates log production, ingestion, storage, and inspection.
 
 At the edge, `semantic_log_generator` materializes interaction facts as RDF resources and links: robots, humans,
 activities, messages, model usage, observations, and result entities. Those triples are serialized as Turtle and sent
-to the backend through `/ttl` or the shared-context endpoints. The backend validates and stores them in the Knowledge
+to the backend, which validates and stores them in the Knowledge
 Graph. In this repository, the storage layer behind the backend is Virtuoso, but most users interact with the backend
 API and the web UI rather than with the database directly.
 

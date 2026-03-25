@@ -100,6 +100,12 @@ belong to the same trace.
 count resources, or inspect a small slice of the graph before you change the pipeline. It is a debugging page, not a
 reporting page.
 
+### A Good First Query
+
+If you loaded the UC-02 dataset from [Quickstart](../getting-started/quickstart.md), start with the message-timeline
+query shown there. It gives you a quick answer to a practical question: which messages are in the graph, who sent them,
+and which robot-side activity produced them.
+
 ## Shared-Context Review
 
 `http://localhost:8080/shared-context` is the admin page for reviewing ambiguous shared-context cases. It becomes
