@@ -19,6 +19,21 @@ If you are only learning SEGB, you can stop here and continue with the rest of t
 If `SECRET_KEY` is set, the backend expects an HS256 JWT and enforces route-level roles. Use this mode when you need
 real separation between log publishers, readers, and operators.
 
+### Generate A Secret Key
+
+Generate a cryptographically strong secret with Python's standard library:
+
+```python
+import secrets
+print(secrets.token_urlsafe(32))
+```
+
+Copy the output into your `.env` file:
+
+```bash
+SECRET_KEY="<output_from_above>"
+```
+
 ## Roles
 
 SEGB uses three practical roles:
