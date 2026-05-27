@@ -1,6 +1,6 @@
 [project]
 name = "segb"
-version = "0.2.0"
+version = "1.1.1"
 description = "Semantic Ethical Glass Box (SEGB) for AMOR project"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
