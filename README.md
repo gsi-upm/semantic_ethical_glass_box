@@ -99,3 +99,11 @@ Use these pages as the main reading path:
 - Protocol and data reference: [API and Roles](docs/reference/api-and-roles.md), [Ontology](docs/reference/ontology.md)
 
 If you prefer to browse the docs from the repository, start at [docs/index.md](docs/index.md).
+
+## Evaluation
+
+SEGB has been evaluated with real robot interaction traces, covering log ingestion latency, concurrent logging from
+multiple robots, Knowledge Graph growth, report queries, and graph structure. 
+
+For the full methodology and final quantitative results, as well as reproducibility step-by-step guide, raw metrics, and limitations, see the
+[SEGB evaluation guide](eval/README.md).
