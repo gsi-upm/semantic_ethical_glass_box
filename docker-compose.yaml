@@ -29,7 +29,7 @@ services:
   # ─────────────────────────────
   amor-segb-virtuoso:
     container_name: amor-segb-virtuoso
-    image: openlink/virtuoso-opensource-7
+    image: openlink/virtuoso-opensource-7:7.2.16
     ports:
       - "8890:8890"
       - "1111:1111"
