@@ -1,11 +1,12 @@
 import os
 import unittest
+from datetime import datetime, timezone
 
 from rdflib import Literal, URIRef
-from rdflib.namespace import RDF
+from rdflib.namespace import RDF, XSD
 
 from examples.simulations.run_use_case_02_report_ready_dataset import run_report_ready_simulation
-from semantic_log_generator.namespaces import EMOML, ONYX, ORO, SCHEMA
+from semantic_log_generator.namespaces import EMOML, ONYX, ORO, PROV, SCHEMA
 
 
 class TestROS2MockReportReadySimulation(unittest.TestCase):
@@ -84,6 +85,23 @@ class TestROS2MockReportReadySimulation(unittest.TestCase):
 
         self.assertTrue(any(value >= 0.9 for value in fear_intensities))
         self.assertTrue(any(value >= 0.98 for value in happiness_intensities))
+
+    def test_report_ready_simulation_accepts_fixed_article_demo_time(self) -> None:
+        result = run_report_ready_simulation(
+            base_time=datetime(2026, 2, 24, 12, 20, 50, 116970, tzinfo=timezone.utc)
+        )
+        graph = result.graph
+        ari_namespace = result.base_result.ari_namespace
+        speech_emotion_activity = URIRef(f"{ari_namespace}activity_ari_emotion_from_speech_1")
+
+        self.assertIn(
+            (
+                speech_emotion_activity,
+                PROV.startedAtTime,
+                Literal("2026-02-24T12:20:55.116970+00:00", datatype=XSD.dateTime),
+            ),
+            graph,
+        )
 
 
 if __name__ == "__main__":

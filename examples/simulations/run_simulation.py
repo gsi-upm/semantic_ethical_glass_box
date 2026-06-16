@@ -145,7 +145,17 @@ def _run_utterance_flow(
     return ari_result, tiago_result
 
 
-def run_basic_simulation(*, shared_event_resolver: SharedEventResolver | None = None) -> SimulationResult:
+def _normalize_utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def run_basic_simulation(
+    *,
+    shared_event_resolver: SharedEventResolver | None = None,
+    base_time: datetime | None = None,
+) -> SimulationResult:
     """Runs one interaction scenario.
 
     Scenario:
@@ -157,7 +167,7 @@ def run_basic_simulation(*, shared_event_resolver: SharedEventResolver | None = 
     graph, ari_logger, tiago_logger = build_loggers(shared_event_resolver=shared_event_resolver)
 
     maria_uri = ari_logger.register_human("maria", first_name="Maria")
-    entry_observed_at = datetime.now(timezone.utc)
+    entry_observed_at = _normalize_utc_datetime(base_time) if base_time is not None else datetime.now(timezone.utc)
     speech_observed_at = entry_observed_at + timedelta(seconds=4)
 
     ari_entry_result, _ = _run_entry_detection(
@@ -282,7 +292,26 @@ def parse_args() -> argparse.Namespace:
     )
     add_ttl_output_arguments(parser)
     add_publish_arguments(parser, include_no_publish=True)
+    parser.add_argument(
+        "--base-time",
+        default=None,
+        help=(
+            "Optional UTC timestamp used as the simulation anchor, for reproducible article/demo output. "
+            "Example: 2026-02-24T12:20:50.116970+00:00"
+        ),
+    )
     return parser.parse_args()
+
+
+def parse_base_time(raw: str | None) -> datetime | None:
+    if not raw:
+        return None
+    normalized = raw.strip().replace("Z", "+00:00")
+    try:
+        parsed = datetime.fromisoformat(normalized)
+    except ValueError as error:
+        raise SystemExit(f"Invalid --base-time value: {raw!r}. Use ISO 8601, e.g. 2026-02-24T12:20:50+00:00.") from error
+    return _normalize_utc_datetime(parsed)
 
 
 def main() -> None:
@@ -290,7 +319,10 @@ def main() -> None:
     publish_config = None if args.no_publish else build_publish_config_from_args(args)
     shared_event_resolver = build_shared_event_resolver(publish_config)
 
-    basic_result = run_basic_simulation(shared_event_resolver=shared_event_resolver)
+    basic_result = run_basic_simulation(
+        shared_event_resolver=shared_event_resolver,
+        base_time=parse_base_time(args.base_time),
+    )
 
     if publish_config is not None:
         report = publish_simulation_result(basic_result, config=publish_config)

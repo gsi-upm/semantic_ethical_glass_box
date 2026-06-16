@@ -49,7 +49,6 @@
           <span>{{ item.label }}</span>
         </div>
       </div>
-      <p class="note">Humans and Robots charts are grouped by target entity. Report 4 uses intensity threshold only.</p>
       <div v-if="humanEmotionCharts.length === 0 && robotEmotionCharts.length === 0" class="empty">No emotion timeline data available.</div>
       <div v-else class="emotion-spaces">
         <section class="emotion-space">
@@ -451,12 +450,6 @@ onMounted(() => {
 .actions {
   display: flex;
   gap: 0.6rem;
-}
-
-.note {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--ink-600);
 }
 
 .emotion-legend {

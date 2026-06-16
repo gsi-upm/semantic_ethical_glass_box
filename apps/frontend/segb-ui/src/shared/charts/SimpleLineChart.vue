@@ -46,7 +46,7 @@
             />
             <text :x="point.x" :y="height - paddingBottom + 16" class="tick">
               <tspan :x="point.x">{{ splitTickLabel(point.xLabel)[0] }}</tspan>
-              <tspan v-if="splitTickLabel(point.xLabel)[1]" :x="point.x" dy="11">
+              <tspan v-if="splitTickLabel(point.xLabel)[1]" :x="point.x" dy="18">
                 {{ splitTickLabel(point.xLabel)[1] }}
               </tspan>
             </text>
@@ -55,9 +55,9 @@
           <text :x="chartWidth / 2" :y="height - 8" class="axis-title x-axis-title">Timestamp (UTC)</text>
           <text
             :x="yAxisTitleX"
-            :y="height / 2"
+            :y="yAxisTitleY"
             class="axis-title y-axis-title"
-            :transform="`rotate(-90 ${yAxisTitleX} ${height / 2})`"
+            :transform="`rotate(-90 ${yAxisTitleX} ${yAxisTitleY})`"
           >
             Emotion intensity (%)
           </text>
@@ -71,7 +71,13 @@
       :style="{ left: `${tooltip.x}px`, top: `${tooltip.y}px` }"
       role="tooltip"
     >
-      <div v-for="(line, index) in tooltip.lines" :key="index">{{ line }}</div>
+      <div v-for="(line, index) in tooltip.lines" :key="index">
+        <template v-if="splitTooltipLine(line)[1]">
+          <span class="point-tooltip-key">{{ splitTooltipLine(line)[0] }}:     </span>
+          <span class="point-tooltip-value"> {{ splitTooltipLine(line)[1] }}</span>
+        </template>
+        <span v-else>{{ line }}</span>
+      </div>
     </div>
   </div>
 </template>
@@ -114,9 +120,10 @@ const props = withDefaults(
 const height = 420
 const paddingTop = computed(() => (props.showTitle || props.showLegend ? 24 : 36))
 const paddingRight = 74
-const paddingBottom = 106
-const paddingLeft = 74
-const yAxisTitleX = 18
+const paddingBottom = 118
+const paddingLeft = 84
+const yAxisTitleX = 20
+const yAxisTitleY = computed(() => (paddingTop.value + height - paddingBottom) / 2)
 const minPointSpacing = 130
 const pointRadius = 9.2
 
@@ -190,6 +197,14 @@ function pointTooltipLines(point: LinePoint): string[] {
   return lines
 }
 
+function splitTooltipLine(line: string): [string, string?] {
+  const separatorIndex = line.indexOf(':')
+  if (separatorIndex <= 0) {
+    return [line]
+  }
+  return [line.slice(0, separatorIndex).trim(), line.slice(separatorIndex + 1).trim()]
+}
+
 const chartWidth = computed(() => {
   const pointCount = Math.max(props.points.length, 2)
   const maxLabelLength = props.points.reduce((max, point) => Math.max(max, point.xLabel.length), 0)
@@ -256,9 +271,9 @@ const tooltip = ref<{ visible: boolean; x: number; y: number; lines: string[] }>
 let resizeObserver: ResizeObserver | null = null
 
 function updateTooltipPosition(clientX: number, clientY: number): void {
-  const margin = 12
-  const estimatedWidth = 340
-  const estimatedHeight = Math.max(88, tooltip.value.lines.length * 22)
+  const margin = 25
+  const estimatedWidth = 380
+  const estimatedHeight = Math.max(104, tooltip.value.lines.length * 25)
   let x = clientX + margin
   let y = clientY + margin
 
@@ -480,6 +495,7 @@ function onPointerUp(event: PointerEvent): void {
   font-size: 17px;
   fill: #334155;
   font-weight: 800;
+  padding: 5px;
 }
 
 .x-axis-title {
@@ -494,14 +510,25 @@ function onPointerUp(event: PointerEvent): void {
   position: fixed;
   z-index: 1200;
   pointer-events: none;
-  background: rgba(15, 23, 42, 0.96);
+  background: rgba(51, 65, 85, 0.96);
   color: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.55);
   border-radius: 8px;
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.3);
-  padding: 0.45rem 0.6rem;
-  max-width: min(360px, calc(100vw - 16px));
-  font-size: 0.82rem;
+  padding: 0.55rem 0.7rem;
+  max-width: min(380px, calc(100vw - 16px));
+  font-size: 0.9rem;
+  font-weight: 400;
   line-height: 1.35;
+}
+
+.point-tooltip-key {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.point-tooltip-value {
+  color: #f8fafc;
+  font-weight: 800;
 }
 </style>

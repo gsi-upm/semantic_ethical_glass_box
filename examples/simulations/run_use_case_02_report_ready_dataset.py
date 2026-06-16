@@ -27,6 +27,7 @@ from examples.simulations.run_simulation import (
     SimulationResult,
     build_publish_config_from_args,
     build_shared_event_resolver,
+    parse_base_time,
     publish_graph,
     run_basic_simulation,
 )
@@ -120,7 +121,7 @@ def _register_models(ari_logger: SemanticSEGBLogger) -> ReportModels:
     return ReportModels(asr=asr_model, emotion=emotion_model, vision=vision_model)
 
 
-def _log_model_training(ari_logger: SemanticSEGBLogger, models: ReportModels) -> None:
+def _log_model_training(ari_logger: SemanticSEGBLogger, models: ReportModels, *, now: datetime) -> None:
     dataset_uri = ari_logger.register_dataset("emotion_dataset_v1", label="EmotionDataset v1")
     eval_uri = ari_logger.register_model_evaluation(
         "emotion_accuracy_eval_1",
@@ -130,8 +131,8 @@ def _log_model_training(ari_logger: SemanticSEGBLogger, models: ReportModels) ->
     train_run = ari_logger.log_activity(
         activity_id="emotion_model_training_run_1",
         activity_kind=ActivityKind.ML_RUN,
-        started_at=datetime.now(timezone.utc) - timedelta(minutes=30),
-        ended_at=datetime.now(timezone.utc) - timedelta(minutes=20),
+        started_at=now - timedelta(minutes=30),
+        ended_at=now - timedelta(minutes=20),
         used_models=[models.emotion],
         used_entities=[dataset_uri],
         produced_entity_results=[models.emotion, eval_uri],
@@ -147,6 +148,7 @@ def _log_conversation_sequence(
     human_uri: URIRef,
     base_result: SimulationResult,
     models: ReportModels,
+    now: datetime,
 ) -> ConversationArtifacts:
     cheer_request = _log_cheer_request_start(
         ari_logger=ari_logger,
@@ -154,6 +156,7 @@ def _log_conversation_sequence(
         base_result=base_result,
         asr_model=models.asr,
         vision_model=models.vision,
+        now=now,
     )
     anxiety = _log_exam_news_and_anxiety(
         ari_logger=ari_logger,
@@ -182,6 +185,7 @@ def _log_cheer_request_start(
     base_result: SimulationResult,
     asr_model: URIRef,
     vision_model: URIRef,
+    now: datetime,
 ) -> CheerRequestFlow:
     ari_listening_activity = ari_logger.resource_uri("activity", "ari_listening_1")
     ari_logger.link_activity_model(ari_listening_activity, asr_model)
@@ -189,13 +193,13 @@ def _log_cheer_request_start(
     ari_logger.log_activity(
         activity_id="vision_perception_1",
         activity_kind=ActivityKind.HUMAN_DETECTION,
-        started_at=datetime.now(timezone.utc),
-        ended_at=datetime.now(timezone.utc),
+        started_at=now,
+        ended_at=now,
         used_models=[vision_model],
         related_shared_events=[base_result.shared_event_uri],
     )
 
-    base_t = datetime.now(timezone.utc) - timedelta(minutes=10)
+    base_t = now - timedelta(minutes=10)
 
     cheer_request_shared_event = ari_logger.get_shared_event_uri(
         event_kind="human_utterance",
@@ -487,19 +491,22 @@ def enrich_report_ready_graph(
     base_result: SimulationResult,
     *,
     shared_event_resolver: SharedEventResolver | None = None,
+    base_time: datetime | None = None,
 ) -> datetime:
     """Adds report-oriented data on top of the base interaction graph."""
+    now = base_time if base_time is not None else datetime.now(timezone.utc)
     loggers = _build_report_loggers(base_result, shared_event_resolver=shared_event_resolver)
     human_uri = base_result.human_uri
 
     models = _register_models(loggers.ari)
-    _log_model_training(loggers.ari, models)
+    _log_model_training(loggers.ari, models, now=now)
 
     conversation = _log_conversation_sequence(
         ari_logger=loggers.ari,
         human_uri=human_uri,
         base_result=base_result,
         models=models,
+        now=now,
     )
     _log_recovery_emotion(
         ari_logger=loggers.ari,
@@ -519,10 +526,19 @@ def enrich_report_ready_graph(
 def run_report_ready_simulation(
     *,
     shared_event_resolver: SharedEventResolver | None = None,
+    base_time: datetime | None = None,
 ) -> ReportReadySimulationResult:
     """Runs use case 02 (base interaction + report-oriented enrichment)."""
-    base_result = run_basic_simulation(shared_event_resolver=shared_event_resolver)
-    base_timestamp = enrich_report_ready_graph(base_result, shared_event_resolver=shared_event_resolver)
+    simulation_anchor = base_time if base_time is not None else datetime.now(timezone.utc)
+    base_result = run_basic_simulation(
+        shared_event_resolver=shared_event_resolver,
+        base_time=simulation_anchor,
+    )
+    base_timestamp = enrich_report_ready_graph(
+        base_result,
+        shared_event_resolver=shared_event_resolver,
+        base_time=simulation_anchor,
+    )
     return ReportReadySimulationResult(
         graph=base_result.graph,
         base_result=base_result,
@@ -545,6 +561,14 @@ def parse_args() -> argparse.Namespace:
     )
     add_ttl_output_arguments(parser)
     add_publish_arguments(parser, include_no_publish=True)
+    parser.add_argument(
+        "--base-time",
+        default=None,
+        help=(
+            "Optional UTC timestamp used as the simulation anchor, for reproducible article/demo output. "
+            "Example: 2026-02-24T12:20:50.116970+00:00"
+        ),
+    )
     return parser.parse_args()
 
 
@@ -553,7 +577,10 @@ def main() -> None:
     publish_config = None if args.no_publish else build_publish_config_from_args(args)
     shared_event_resolver = build_shared_event_resolver(publish_config)
 
-    result = run_report_ready_simulation(shared_event_resolver=shared_event_resolver)
+    result = run_report_ready_simulation(
+        shared_event_resolver=shared_event_resolver,
+        base_time=parse_base_time(args.base_time),
+    )
 
     if publish_config is not None:
         report = publish_report_ready_simulation_result(result, config=publish_config)
