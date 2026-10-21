@@ -19,6 +19,23 @@ scenes, and the UI turns that data into reports, graph views, queries, and audit
   </a>
 </p>
 
+## How to cite
+
+If you use SEGB in your research, please cite the following paper:
+
+```bibtex
+@article{BENITEZ2026102849,
+  title   = {Semantic ethical glass box (SEGB): A knowledge graph--based framework for transparent robot behaviour analysis in social robotics},
+  journal = {SoftwareX},
+  volume  = {35},
+  pages   = {102849},
+  year    = {2026},
+  issn    = {2352-7110},
+  doi     = {10.1016/j.softx.2026.102849},
+  url     = {https://www.sciencedirect.com/science/article/pii/S2352711026003419},
+  author  = {Ben{\'i}tez, Jos{\'e} L. and Carrera, {\'A}lvaro and Mu{\~n}oz, Sergio and Araque, {\'O}scar and Iglesias, Carlos {\'A}.}
+}
+
 ## Quickstart
 
 For the shortest meaningful run, this is the right path. It starts the centralized stack, loads the UC-02 demo
