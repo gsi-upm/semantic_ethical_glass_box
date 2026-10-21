@@ -8,7 +8,7 @@ SEGB is a semantic logging stack for human-robot interaction. It captures intera
 knowledge so you can inspect not only what happened, but also who did it, which model was involved, what followed, and
 how the pieces belong to the same trace.
 
-The practical contract is straightforward. Consider a scenario in which multiple humans and social robots interact with each other. The robots emit Turtle (TTL) logs describing internal processes, actors, activities, messages, and the links between them. The backend ingests and processes these logs and stores them in a global Knowledge Graph (KG). This KG provides a semantic representation of the scenario, relating actors and activities and capturing the context in which one event triggers another. A web UI then provides high-level reports and tools to visualise and filter the KG, making scenario auditing and explanation easier.
+The practical contract is straightforward. Consider a scenario in which multiple humans and social robots interact. The robots emit Turtle (TTL) logs describing internal processes, actors, activities, messages, and the links between them. The backend ingests and processes these logs, storing them in a global Knowledge Graph (KG). This KG provides a semantic representation of the scenario, relating actors and activities and capturing the context in which one event triggers another. A web UI then provides high-level reports and tools to visualise and filter the KG, making scenario auditing and explanation easier.
 
 ![Architecture](assets/final_architecture.png)
 
@@ -85,6 +85,23 @@ This makes the scenario queryable end to end: what the robot heard, which compon
 involved, and what response followed. In the Web UI, those same links appear as high-level reports and inspectable
 graph views.
 
+## How to cite
+
+If you use SEGB in your research, please cite the following paper:
+
+```bibtex
+@article{BENITEZ2026102849,
+  title   = {Semantic ethical glass box (SEGB): A knowledge graph--based framework for transparent robot behaviour analysis in social robotics},
+  journal = {SoftwareX},
+  volume  = {35},
+  pages   = {102849},
+  year    = {2026},
+  issn    = {2352-7110},
+  doi     = {10.1016/j.softx.2026.102849},
+  url     = {https://www.sciencedirect.com/science/article/pii/S2352711026003419},
+  author  = {Ben{\'i}tez, Jos{\'e} L. and Carrera, {\'A}lvaro and Mu{\~n}oz, Sergio and Araque, {\'O}scar and Iglesias, Carlos {\'A}.}
+}
+```
 
 ## Recommended First Path
 
