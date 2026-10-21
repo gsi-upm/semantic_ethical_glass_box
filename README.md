@@ -35,6 +35,7 @@ If you use SEGB in your research, please cite the following paper:
   url     = {https://www.sciencedirect.com/science/article/pii/S2352711026003419},
   author  = {Ben{\'i}tez, Jos{\'e} L. and Carrera, {\'A}lvaro and Mu{\~n}oz, Sergio and Araque, {\'O}scar and Iglesias, Carlos {\'A}.}
 }
+```
 
 ## Quickstart
 
