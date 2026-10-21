@@ -13,6 +13,7 @@ In practice, a robot or simulator builds semantic logs, the backend receives the
 scenes, and the UI turns that data into reports, graph views, queries, and audit workflows.
 
 ## Demo video
+<iframe width="560" height="315" src="https://www.youtube.com/embed/75dqJFtUymc?si=LJ9667Z9BDRhAkUL" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 <p align="center">
   <a href="https://youtu.be/p6129SFpljc?si=rZc6XoGw68sRCyT3">
@@ -22,7 +23,7 @@ scenes, and the UI turns that data into reports, graph views, queries, and audit
 
 ## Quickstart
 
-If you want the shortest meaningful run, this is the right path. It starts the centralized stack, loads the UC-02 demo
+For the shortest meaningful run, this is the right path. It starts the centralized stack, loads the UC-02 demo
 dataset, and opens the UI with real interaction data already prepared for reports and graph exploration.
 
 ### 1. Clone the repository and enter it
@@ -105,5 +106,5 @@ If you prefer to browse the docs from the repository, start at [docs/index.md](d
 SEGB has been evaluated with real robot interaction traces, covering log ingestion latency, concurrent logging from
 multiple robots, Knowledge Graph growth, report queries, and graph structure. 
 
-For the full methodology and final quantitative results, as well as reproducibility step-by-step guide, raw metrics, and limitations, see the
+For the full methodology and final quantitative results, as well as a step-by-step reproducibility guide, raw metrics, and limitations, see the
 [SEGB evaluation guide](eval/README.md).
