@@ -13,11 +13,9 @@ In practice, a robot or simulator builds semantic logs, the backend receives the
 scenes, and the UI turns that data into reports, graph views, queries, and audit workflows.
 
 ## Demo video
-<iframe width="560" height="315" src="https://www.youtube.com/embed/75dqJFtUymc?si=LJ9667Z9BDRhAkUL" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
 <p align="center">
-  <a href="https://youtu.be/p6129SFpljc?si=rZc6XoGw68sRCyT3">
-    <img src="https://img.youtube.com/vi/p6129SFpljc/maxresdefault.jpg" alt="SEGB demo video" width="720" />
+  <a href="https://youtu.be/75dqJFtUymc">
+    <img src="https://img.youtube.com/vi/75dqJFtUymc/maxresdefault.jpg" alt="Vídeo de demostración" width="720" />
   </a>
 </p>
 
