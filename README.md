@@ -15,7 +15,7 @@ scenes, and the UI turns that data into reports, graph views, queries, and audit
 ## Demo video
 <p align="center">
   <a href="https://youtu.be/75dqJFtUymc">
-    <img src="https://img.youtube.com/vi/75dqJFtUymc/maxresdefault.jpg" alt="Vídeo de demostración" width="720" />
+    <img src="https://img.youtube.com/vi/75dqJFtUymc/maxresdefault.jpg" alt="Demo video" width="720" />
   </a>
 </p>
 
