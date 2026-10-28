@@ -124,3 +124,16 @@ multiple robots, Knowledge Graph growth, report queries, and graph structure.
 
 For the full methodology and final quantitative results, as well as a step-by-step reproducibility guide, raw metrics, and limitations, see the
 [SEGB evaluation guide](eval/README.md).
+
+## History
+
+This repository holds two release lines:
+
+- **0.x (0.1.0 to 0.4.11)**: the original MongoDB-based implementation, used by the AMOR deployment. It continues in the
+  [`legacy-0.4`](../../tree/legacy-0.4) branch for bug fixes; its documentation is at
+  [segb.readthedocs.io](https://segb.readthedocs.io/).
+- **1.x (1.0.1 onwards)**: the Virtuoso-based stack described in the SoftwareX paper above. It started from the
+  `rag-beta` branch and was developed in a separate repository, whose full history was imported here by merge commit
+  `84ae207` without rewriting any commit. Tags `1.0.1` to `1.1.1` keep their original commits.
+
+Use `git describe --tags --match '1.*'` to see the position of a commit relative to the 1.x releases.
