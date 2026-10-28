@@ -1,0 +1,42 @@
+site_name: AMOR-SEGB Documentation
+site_description: Semantic Ethical Glass Box (SEGB) is a framework for generating semantic logs from human-robot interactions, enabling ethical analysis and transparency in robotic systems.
+repo_url: https://github.com/gsi-upm/semantic_ethical_glass_box
+repo_name: gsi-upm/semantic_ethical_glass_box
+edit_uri: edit/main/docs/
+
+theme:
+  name: readthedocs
+  logo: assets/segb-logo.png
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+
+exclude_docs: |
+  backup/
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quickstart: getting-started/quickstart.md
+      - Core Concepts and Roles: getting-started/core-concepts-and-roles.md
+  - Package:
+      - Overview: package/index.md
+      - Install semantic_log_generator: package/installation.md
+      - API Reference: package/api-reference.md
+      - Use semantic_log_generator: package/usage.md
+  - Guides:
+      - Publish Your First Log: guides/publish-your-first-log.md
+      - Explore the Web UI: guides/explore-the-web-ui.md
+      - Shared Context Workflow: guides/shared-context-workflow.md
+      - ROS4HRI Integration: guides/ros4hri-integration.md
+  - Operations:
+      - Centralized Deployment: operations/centralized-deployment.md
+      - Authentication and JWT: operations/authentication-and-jwt.md
+  - Reference:
+      - API and Roles: reference/api-and-roles.md
+      - Ontology: reference/ontology.md

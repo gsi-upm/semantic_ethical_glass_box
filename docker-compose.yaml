@@ -1,38 +1,74 @@
 services:
-  segb:
-    container_name: segb-server
-    image: ghcr.io/gsi-upm/segb:latest
-    build: .
+  # ─────────────────────────────
+  # SEGB Backend (FastAPI)
+  # ─────────────────────────────
+  amor-segb:
+    container_name: amor-segb-server
+    image: ${SEGB_BACKEND_IMAGE:-ghcr.io/gsi-upm/semantic_ethical_glass_box/amor-segb}:${SEGB_IMAGE_TAG:-latest}
+    pull_policy: always
     ports:
       - "5000:5000"
     networks:
       - internal_network
     depends_on:
-      - segb-mongodb
+      - amor-segb-virtuoso
     environment:
-      - SECRET_KEY=${SECRET_KEY} # Defined in .env file or leave empty
-      - DATABASE_SERVICE=segb-mongodb
       - LOGGING_LEVEL=DEBUG
-      - VERSION=${VERSION}
+      - VERSION=${VERSION:-stable}
+      - SECRET_KEY=${SECRET_KEY:-}
+      - VIRTUOSO_ENDPOINT=${VIRTUOSO_ENDPOINT:-http://amor-segb-virtuoso:8890/sparql-auth}
+      - VIRTUOSO_GRAPH_URI=${VIRTUOSO_GRAPH_URI:-http://amor-segb/events}
+      - VIRTUOSO_USER=${VIRTUOSO_USER:-dba}
+      - VIRTUOSO_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
     volumes:
       - ./logs:/logs
-      # If you want to modify the logging configuration, you can mount this file.
-      # The application reads this file at startup using the PyYAML library.
+    restart: always
 
-      # - ./log_conf.yaml:/app/log_conf.yaml
-
-  segb-mongodb:
-    container_name: segb-mongodb
-    image: mongodb/mongodb-community-server:8.0.0-ubi8
+  # ─────────────────────────────
+  # Virtuoso Triple Store
+  # ─────────────────────────────
+  amor-segb-virtuoso:
+    container_name: amor-segb-virtuoso
+    image: openlink/virtuoso-opensource-7:7.2.16
+    ports:
+      - "8890:8890"
+      - "1111:1111"
+    environment:
+      - DBA_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
     volumes:
-      - segb-db:/data/db
-      - segb-db:/data/configdb
+      - virtuoso_data:/database
     networks:
       - internal_network
 
+  # ─────────────────────────────
+  # Frontend SEGB-UI (Vue + Nginx)
+  # ─────────────────────────────
+  segb-ui:
+    container_name: segb-ui
+    image: ${SEGB_FRONTEND_IMAGE:-ghcr.io/gsi-upm/semantic_ethical_glass_box/segb-ui}:${SEGB_IMAGE_TAG:-latest}
+    pull_policy: always
+    depends_on:
+      - amor-segb
+    ports:
+      - "8080:8080"
+    networks:
+      - internal_network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+    restart: always
+
+# ─────────────────────────────
+# Networks
+# ─────────────────────────────
 networks:
   internal_network:
     driver: bridge
 
+# ─────────────────────────────
+# Persistent volumes
+# ─────────────────────────────
 volumes:
-  segb-db:
+  virtuoso_data:
