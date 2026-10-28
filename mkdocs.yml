@@ -1,4 +1,4 @@
-site_name: AMOR-SEGB Documentation
+site_name: SEGB Documentation
 site_description: Semantic Ethical Glass Box (SEGB) is a framework for generating semantic logs from human-robot interactions, enabling ethical analysis and transparency in robotic systems.
 repo_url: https://github.com/gsi-upm/semantic_ethical_glass_box
 repo_name: gsi-upm/semantic_ethical_glass_box
