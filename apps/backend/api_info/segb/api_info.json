@@ -1,0 +1,12 @@
+{
+    "title": "SEGB",
+    "contact": {
+        "name": "Grupo de Sistemas Inteligentes (GSI) - Universidad Politécnica de Madrid (UPM)",
+        "url": "https://www.gsi.upm.es",
+        "email": "a.carrera@upm.es"
+    },
+    "license": {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0"
+    }
+}
