@@ -25,7 +25,7 @@ class TestVirtuosoQueryValidation(unittest.TestCase):
     def test_keeps_update_unchanged_when_graph_clause_present(self) -> None:
         model = VirtuosoModel()
         query = (
-            "INSERT DATA { GRAPH <http://amor-segb/events> "
+            "INSERT DATA { GRAPH <http://segb/events> "
             "{ <https://example.org/a> <https://example.org/b> <https://example.org/c> . } }"
         )
         prepared = model._prepare_update_query(query)

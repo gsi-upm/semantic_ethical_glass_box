@@ -40,8 +40,8 @@ class VirtuosoModel:
 
     def __init__(self) -> None:
         self.session = VirtuosoModel._session
-        self.endpoint = os.getenv("VIRTUOSO_ENDPOINT", "http://amor-segb-virtuoso:8890/sparql-auth")
-        self.graph_uri = os.getenv("VIRTUOSO_GRAPH_URI", "http://amor-segb/events")
+        self.endpoint = os.getenv("VIRTUOSO_ENDPOINT", "http://segb-virtuoso:8890/sparql-auth")
+        self.graph_uri = os.getenv("VIRTUOSO_GRAPH_URI", "http://segb/events")
         self.user = os.getenv("VIRTUOSO_USER", "dba")
         self.password = os.getenv("VIRTUOSO_PASSWORD") or os.getenv("DBA_PASSWORD")
 

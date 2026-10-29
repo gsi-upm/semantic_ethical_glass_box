@@ -70,7 +70,7 @@ openssl rand -hex 32
 
 Production compose pulls backend/frontend from GHCR:
 
-- `ghcr.io/gsi-upm/semantic_ethical_glass_box/amor-segb`
+- `ghcr.io/gsi-upm/semantic_ethical_glass_box/segb`
 - `ghcr.io/gsi-upm/semantic_ethical_glass_box/segb-ui`
 
 Production-like stack:
@@ -240,8 +240,8 @@ If you already ran a reset action in Step 9, empty output is expected until you 
 
 ## Troubleshooting
 
-- Backend not ready: check `docker compose -f docker-compose.yaml logs -f amor-segb`.
-- Virtuoso not reachable: check `docker compose -f docker-compose.yaml logs -f amor-segb-virtuoso`.
+- Backend not ready: check `docker compose -f docker-compose.yaml logs -f segb`.
+- Virtuoso not reachable: check `docker compose -f docker-compose.yaml logs -f segb-virtuoso`.
 - `401/403`: verify token roles (`admin`, `auditor`, `logger`) and token expiration.
 - Port conflicts: run `lsof -i :5000 -i :8080 -i :8890 -i :1111`.
 - Empty reports/graph: run Step 7 again and refresh `/reports` and `/kg-graph`.

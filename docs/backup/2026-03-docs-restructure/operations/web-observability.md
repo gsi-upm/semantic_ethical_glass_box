@@ -94,5 +94,5 @@ For a detailed explanation of what each report means and what dataset semantics 
 - Health shows `live=false`: backend process is not healthy (startup crash, runtime crash, or restart loop). Check backend logs:
 
   ```bash
-  docker compose -f docker-compose.yaml logs -f amor-segb
+  docker compose -f docker-compose.yaml logs -f segb
   ```

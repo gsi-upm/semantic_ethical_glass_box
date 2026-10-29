@@ -177,10 +177,29 @@ docker compose -f docker-compose.yaml down -v
 
 This is destructive. It deletes the persisted database volume.
 
+## Upgrading From 1.1.x
+
+Version `1.2.0` renamed the stack: the services are now `segb` and `segb-virtuoso`, the backend image is
+`ghcr.io/gsi-upm/semantic_ethical_glass_box/segb`, and the default event graph is `http://segb/events`.
+
+A 1.1.x deployment keeps its triples in the graph it used before, which has a different name, so after upgrading the new
+default graph looks empty. To keep reading the existing data, find the old graph name and set it explicitly in `.env`:
+
+```sparql
+SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } }
+```
+
+```bash
+VIRTUOSO_GRAPH_URI=<the graph name returned by the query>
+```
+
+Also update anything that referred to the old container, service or image names (scripts, `docker compose logs` calls,
+reverse-proxy targets).
+
 ## Common Problems
 
-- backend not ready: check `docker compose -f docker-compose.yaml logs -f amor-segb`
-- Virtuoso not reachable: check `docker compose -f docker-compose.yaml logs -f amor-segb-virtuoso`
+- backend not ready: check `docker compose -f docker-compose.yaml logs -f segb`
+- Virtuoso not reachable: check `docker compose -f docker-compose.yaml logs -f segb-virtuoso`
 - Port conflicts: run `lsof -i :5000 -i :8080 -i :8890 -i :1111`
 - Auth errors: read [Authentication and JWT](authentication-and-jwt.md)
 
