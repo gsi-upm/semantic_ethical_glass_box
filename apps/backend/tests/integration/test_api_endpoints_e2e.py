@@ -17,6 +17,8 @@ class FakeVirtuosoStore:
     def __init__(self) -> None:
         self.inserted_payloads: list[str] = []
         self.audits: list[object] = []
+        self.history: list[dict] = []
+        self.entries: dict[str, dict] = {}
         self.last_validated_query: tuple[str, bool] | None = None
         self.last_executed_query: tuple[str, bool] | None = None
         self.ttl_text = "@prefix ex: <https://example.org/> ."
@@ -50,6 +52,12 @@ class FakeVirtuosoStore:
     def run_custom_query(self, query: str, *, allow_updates: bool = False) -> str:
         self.last_executed_query = (query, allow_updates)
         return "@prefix ex: <https://example.org/> ."
+
+    def list_audit_entries(self) -> list[dict]:
+        return list(self.history)
+
+    def get_audit_entry(self, log_id: str) -> dict | None:
+        return self.entries.get(log_id)
 
     def delete_all_triples(self, *, audit: object) -> str | None:
         self.audits.append(audit)
@@ -132,6 +140,43 @@ class TestApiEndpointsE2E(unittest.TestCase):
         self.assertEqual(response.json()["log_id"], "del-log-id")
         (audit,) = services.virtuoso.audits
         self.assertEqual((audit.username, audit.roles, audit.route), ("test_user", ("admin",), "POST /ttl/delete_all"))
+
+    def test_history_and_log_need_the_auditor_or_admin_role(self) -> None:
+        client, _ = _build_test_app(roles=["logger"])
+        try:
+            self.assertEqual(client.get("/history").status_code, 403)
+            self.assertEqual(client.get("/log", params={"log_id": "x"}).status_code, 403)
+        finally:
+            client.close()
+
+    def test_history_of_an_empty_audit_is_an_empty_list(self) -> None:
+        client, _ = _build_test_app(roles=["auditor"])
+        try:
+            response = client.get("/history")
+        finally:
+            client.close()
+        self.assertEqual((response.status_code, response.json()), (200, []))
+
+    def test_history_lists_the_summaries(self) -> None:
+        client, services = _build_test_app(roles=["admin"])
+        services.virtuoso.history = [{"_id": "a", "action_type": "insertion"}, {"_id": "b", "action_type": "deletion"}]
+        try:
+            response = client.get("/history")
+        finally:
+            client.close()
+        self.assertEqual([e["_id"] for e in response.json()], ["a", "b"])
+
+    def test_log_without_id_is_400_unknown_id_is_404_known_id_returns_log_and_action(self) -> None:
+        client, services = _build_test_app(roles=["auditor"])
+        services.virtuoso.entries["known"] = {"log": {"_id": "known"}, "action": {"ttl_content": "x"}}
+        try:
+            self.assertEqual(client.get("/log").status_code, 400)
+            self.assertEqual(client.get("/log", params={"log_id": ""}).status_code, 400)
+            self.assertEqual(client.get("/log", params={"log_id": "nope"}).status_code, 404)
+            known = client.get("/log", params={"log_id": "known"})
+        finally:
+            client.close()
+        self.assertEqual((known.status_code, known.json()["action"]), (200, {"ttl_content": "x"}))
 
     def test_ttl_insert_returns_503_when_virtuoso_is_not_ready(self) -> None:
         client, _ = _build_test_app(roles=["admin"], virtuoso_ok=False)

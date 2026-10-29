@@ -42,6 +42,12 @@ class GraphStorePort(Protocol):
     def delete_all_triples(self, *, audit: AuditContext) -> str | None:
         ...
 
+    def list_audit_entries(self) -> list[dict[str, Any]]:
+        ...
+
+    def get_audit_entry(self, log_id: str) -> dict[str, Any] | None:
+        ...
+
 
 @runtime_checkable
 class SharedContextResolverPort(Protocol):
