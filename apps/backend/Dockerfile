@@ -2,7 +2,7 @@ FROM python:3.10-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:0.6.12 /uv /uvx /bin/
 
 LABEL org.opencontainers.image.source=https://github.com/gsi-upm/semantic_ethical_glass_box
-LABEL org.opencontainers.image.description="AMOR-SEGB server"
+LABEL org.opencontainers.image.description="SEGB server"
 LABEL org.opencontainers.image.authors="Grupo de Sistemas Inteligentes - Universidad Politécnica de Madrid"
 LABEL org.opencontainers.image.documentation="https://semantic-ethical-black-box-segb.readthedocs.io/en/stable/"
 LABEL org.opencontainers.image.licenses=Apache-2.0
