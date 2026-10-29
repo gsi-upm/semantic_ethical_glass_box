@@ -130,6 +130,33 @@ Errors: `400` without `log_id`, `404` for an unknown or malformed id, `403` for 
 | a deleted graph was always inline | a dump over 4 MiB is referenced by file name and SHA-256 |
 | `/log` unknown id: `404`; malformed id: `404` | unchanged |
 
+## Isolation from `/query`
+
+`GET /query` is read-only and meant for `events`; the audit trail is read through `GET /history` and `GET /log`. Two
+layers keep `/query` away from `audit`:
+
+1. **The dataset is pinned.** Every read query is sent to Virtuoso with `default-graph-uri` and `named-graph-uri` set to
+   the events graph. Without them Virtuoso queries the union of all graphs, so an unqualified `SELECT * { ?s ?p ?o }`
+   would return audit triples, and `GRAPH ?g` would list the audit graph.
+2. **The query text is checked.** A pinned dataset is not enough: a `FROM <audit>` inside the query overrides it, and
+   an explicit `GRAPH <audit>` inside `FILTER EXISTS` ignores it, which would make `EXISTS` a yes/no oracle over the
+   audit trail. So the text is read with a small lexer (comments, strings, IRIs, prefixes, `BASE` and `\u` escapes
+   are handled) and the query is rejected with `422` if it:
+   - names, in `FROM`, `FROM NAMED` or `GRAPH`, any graph other than `events` (resolved through prefixes and `BASE`);
+   - uses `SERVICE`;
+   - calls Virtuoso internals (`bif:`, `sql:`, or the `.../schemas/bif#` namespace, under any prefix label);
+   - calls any function that is not an XSD cast.
+
+   The same message is returned by `POST /query/validate`, with `valid: false`.
+
+The last two rules are not about the audit graph only. In Virtuoso `bif:exec('SPARQL CLEAR GRAPH <g>')` runs with the
+privileges of the account the backend uses (`dba` by default) even inside a `SELECT`, so before this check a user with the `auditor` role
+could erase any graph through `/query`. The `/query` endpoint is not meant to run user-defined functions, so the rule
+is deliberately broad.
+
+Known limitations: an RDF collection written right after an IRI (`?s ex:list (1 2)`) looks like a function call and is
+rejected; and the check is an allow-list written for Virtuoso 7.2.16, so it should be revisited when the image changes.
+
 ## Large dumps
 
 Virtuoso rejects a SPARQL statement of about 10 MB, and a single literal of that size, so a big `events` graph cannot
@@ -162,8 +189,8 @@ statement.
 - Deleting `events` takes the same lock as inserting, so nothing can be added between the dump stored in the entry and the clear.
 - Uploading the same Turtle twice writes one set of triples to `events` and two entries to `audit`, each with its own
   `log_id`.
-- Reading `audit` needs the `auditor` or `admin` role, and `/query` cannot reach it with a `GRAPH` clause unless the role
-  allows it.
+- Reading `audit` needs the `auditor` or `admin` role, and only through `/history` and `/log`: `/query` cannot reach it
+  (see "Isolation from `/query`").
 
 ## Limitations
 

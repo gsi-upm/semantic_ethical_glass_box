@@ -50,5 +50,44 @@ class TestAuditReads(unittest.TestCase):
         self.assertIn(f"<https://example.org/segb/audit/entry/{LOG_ID}>", self._queries()[0])
 
 
+class TestQueryIsolation(unittest.TestCase):
+    def setUp(self) -> None:
+        self.session = Mock()
+        self.session.get.return_value = Mock(
+            raise_for_status=Mock(), text="", json=Mock(return_value={"head": {"vars": []}, "results": {"bindings": []}})
+        )
+        before = VirtuosoModel._session
+        VirtuosoModel._session = self.session
+        self.addCleanup(setattr, VirtuosoModel, "_session", before)
+        env = patch.dict(
+            "os.environ",
+            {"VIRTUOSO_GRAPH_URI": "http://segb/events", "VIRTUOSO_AUDIT_GRAPH_URI": "http://segb/audit",
+             "VIRTUOSO_PASSWORD": "x"},
+        )
+        env.start()
+        self.addCleanup(env.stop)
+
+    def test_read_queries_pin_both_the_default_and_the_named_graphs_to_events(self) -> None:
+        VirtuosoModel().run_custom_query("SELECT * { ?s ?p ?o }")
+
+        params = self.session.get.call_args.kwargs["params"]
+        self.assertEqual(params["default-graph-uri"], "http://segb/events")
+        self.assertEqual(params["named-graph-uri"], "http://segb/events")
+
+    def test_a_query_that_reaches_the_audit_graph_is_invalid_and_never_sent(self) -> None:
+        query = "SELECT * { GRAPH <http://segb/audit> { ?s ?p ?o } }"
+
+        result = VirtuosoModel().validate_query(query)
+        self.assertFalse(result["valid"])
+        self.assertIn("http://segb/audit", result["message"])
+        with self.assertRaises(ValueError):
+            VirtuosoModel().run_custom_query(query)
+        self.session.get.assert_not_called()
+
+    def test_queries_over_events_stay_valid(self) -> None:
+        for query in ("SELECT * { ?s ?p ?o }", "SELECT * FROM <http://segb/events> { ?s ?p ?o }"):
+            self.assertTrue(VirtuosoModel().validate_query(query)["valid"], query)
+
+
 if __name__ == "__main__":
     unittest.main()
