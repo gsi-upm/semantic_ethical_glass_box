@@ -45,3 +45,6 @@ class VirtuosoGraphStoreAdapter(GraphStorePort):
 
     def get_audit_entry(self, log_id: str) -> dict[str, Any] | None:
         return self.client.get_audit_entry(log_id)
+
+    def route_usage(self, route: str) -> dict[str, Any]:
+        return self.client.route_usage(route)

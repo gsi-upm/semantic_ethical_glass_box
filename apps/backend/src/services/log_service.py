@@ -119,3 +119,7 @@ class LogService:
     def audit_entry(self, *, log_id: str, actor: str, origin_ip: str) -> dict | None:
         logger.info("Audit entry requested (actor=%s, ip=%s, log_id=%s)", actor, origin_ip, log_id)
         return self.virtuoso.get_audit_entry(log_id)
+
+    def route_usage(self, route: str, *, actor: str, origin_ip: str) -> dict:
+        logger.info("Route usage requested (actor=%s, ip=%s, route=%s)", actor, origin_ip, route)
+        return self.virtuoso.route_usage(route)

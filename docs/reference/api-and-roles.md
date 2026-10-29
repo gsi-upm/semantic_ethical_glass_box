@@ -24,6 +24,9 @@ SEGB behaves differently depending on `SECRET_KEY`.
 | `GET` | `/query` | `auditor` or `admin` | Execute a read-only SPARQL query over the events graph; queries that reach other graphs, `SERVICE` or non-XSD functions get `422` |
 | `POST` | `/query/validate` | `auditor` or `admin` | Validate a read-only SPARQL query |
 | `POST` | `/ttl/delete_all` | `admin` | Delete graph content (the removed graph is kept in the audit trail) |
+| `POST` | `/log` | `logger` or `admin` | **Deprecated** (0.4.x): insert Turtle sent as the raw body; see [Legacy API](legacy-api.md) |
+| `GET` | `/health` | public | **Deprecated** (0.4.x): plain-text status with the version |
+| `GET` | `/legacy/usage` | `admin` | How often the deprecated `POST /log` was used |
 | `GET` | `/history` | `auditor` or `admin` | List the audit entries, oldest first |
 | `GET` | `/log?log_id=<id>` | `auditor` or `admin` | One audit entry with the uploaded or deleted Turtle |
 | `GET` | `/logs/server` | `admin` | Read backend server logs |

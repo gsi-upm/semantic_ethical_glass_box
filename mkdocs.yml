@@ -41,3 +41,4 @@ nav:
       - API and Roles: reference/api-and-roles.md
       - Ontology: reference/ontology.md
       - Audit Vocabulary: reference/audit-vocabulary.md
+      - Legacy API (0.4.x): reference/legacy-api.md

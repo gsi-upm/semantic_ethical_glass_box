@@ -42,6 +42,9 @@ class GraphStorePort(Protocol):
     def delete_all_triples(self, *, audit: AuditContext) -> str | None:
         ...
 
+    def route_usage(self, route: str) -> dict[str, Any]:
+        ...
+
     def list_audit_entries(self) -> list[dict[str, Any]]:
         ...
 

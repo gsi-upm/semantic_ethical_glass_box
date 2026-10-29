@@ -188,6 +188,27 @@ class VirtuosoModel:
         )
         return {row["a"]["value"]: row["n"]["value"] for row in rows}
 
+    def route_usage(self, route: str) -> dict[str, Any]:
+        """How many audit entries were written through ``route`` (for example ``POST /log``), and when."""
+        if '"' in route or "\\" in route or "\n" in route:
+            raise ValueError("Invalid route.")
+        rows = self._audit_select(
+            f"""
+            SELECT (COUNT(?e) AS ?n) (MIN(?t) AS ?first) (MAX(?t) AS ?last) FROM <{self.audit_graph_uri}>
+            WHERE {{
+              ?e <{AUDIT.route}> "{route}" ;
+                 <http://www.w3.org/ns/prov#startedAtTime> ?t .
+            }}
+            """
+        )
+        row = rows[0] if rows else {}
+        count = int(row.get("n", {}).get("value", 0))
+        return {
+            "count": count,
+            "first_used_at": row.get("first", {}).get("value") if count else None,
+            "last_used_at": row.get("last", {}).get("value") if count else None,
+        }
+
     def list_audit_entries(self) -> list[dict[str, Any]]:
         """Summaries of every audit entry, oldest first. Reads only the audit graph and skips the TTL payloads."""
         rows = self._audit_select(
