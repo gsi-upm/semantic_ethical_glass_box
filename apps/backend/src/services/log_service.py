@@ -7,6 +7,7 @@ import logging
 
 from services.ports import GraphStorePort
 from services.ttl_validation import validate_ttl_content
+from utils.audit import AuditContext
 
 logger = logging.getLogger("segb.server")
 
@@ -35,15 +36,15 @@ class LogService:
         )
         return result.to_payload()
 
-    def insert_ttl(self, *, ttl_content: str, actor: str, origin_ip: str) -> dict:
-        """Persists TTL data in Virtuoso and emits operational logs."""
+    def insert_ttl(self, *, ttl_content: str, actor: str, origin_ip: str, audit: AuditContext) -> dict:
+        """Persists TTL data and its audit entry in Virtuoso and emits operational logs."""
         logger.info(
             "TTL insert requested (actor=%s, ip=%s, bytes=%d)",
             actor,
             origin_ip,
             len(ttl_content.encode("utf-8")),
         )
-        log_id = self.virtuoso.insert_ttl(ttl_content)
+        log_id = self.virtuoso.insert_ttl(ttl_content, audit=audit)
         logger.info("TTL insert completed (actor=%s, ip=%s, log_id=%s)", actor, origin_ip, log_id)
         return {"message": "TTL inserted into Virtuoso", "log_id": log_id}
 

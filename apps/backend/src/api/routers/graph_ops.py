@@ -13,6 +13,7 @@ from api.request_context import build_request_actor, request_actor_context
 from api.schemas import DeleteRequest, QueryValidationRequest, QueryValidationResponse, TTLContent, TtlValidationResponse
 from core.security import Role, User, require_roles, validate_token
 from services.log_service import LogService
+from utils.audit import AuditContext
 
 router = APIRouter()
 transaction_lock = Lock()
@@ -56,6 +57,12 @@ async def insert_ttl(
                 ttl_content=data.ttl_content,
                 actor=request_actor.actor,
                 origin_ip=request_actor.origin_ip,
+                audit=AuditContext(
+                    username=user.username,
+                    roles=tuple(user.roles),
+                    origin_ip=request_actor.origin_ip,
+                    route="POST /ttl",
+                ),
             )
             return JSONResponse(content=response, status_code=201)
 

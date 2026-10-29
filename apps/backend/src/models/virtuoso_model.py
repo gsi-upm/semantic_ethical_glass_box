@@ -7,6 +7,7 @@ import re
 import threading
 import time
 import uuid
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -16,6 +17,7 @@ from rdflib.namespace import RDF
 from rdflib.plugins.sparql.parser import parseQuery, parseUpdate
 from requests.auth import HTTPDigestAuth
 
+from utils.audit import AuditContext, build_insertion_entry
 from utils.prefix_utils import (
     clean_prefixes_with_numbers,
     extract_prefixes,
@@ -42,6 +44,8 @@ class VirtuosoModel:
         self.session = VirtuosoModel._session
         self.endpoint = os.getenv("VIRTUOSO_ENDPOINT", "http://segb-virtuoso:8890/sparql-auth")
         self.graph_uri = os.getenv("VIRTUOSO_GRAPH_URI", "http://segb/events")
+        self.audit_graph_uri = os.getenv("VIRTUOSO_AUDIT_GRAPH_URI", "http://segb/audit")
+        self.audit_base_iri = os.getenv("AUDIT_BASE_IRI", "http://segb/audit/")
         self.user = os.getenv("VIRTUOSO_USER", "dba")
         self.password = os.getenv("VIRTUOSO_PASSWORD") or os.getenv("DBA_PASSWORD")
 
@@ -107,11 +111,22 @@ class VirtuosoModel:
         except (requests.RequestException, RuntimeError, ValueError):
             return False
 
-    def insert_ttl(self, ttl_content: str) -> str:
-        """Parses TTL once and inserts its canonical N-Triples into target graph."""
+    def insert_ttl(self, ttl_content: str, *, audit: AuditContext) -> str:
+        """Parses TTL once and inserts it into the events graph together with its audit entry.
+
+        Both graphs are written by one SPARQL update, so a failed insert leaves no audit entry behind.
+        """
         log_id = str(uuid.uuid4())
         graph = Graph()
         graph.parse(data=ttl_content, format="turtle")
+
+        entry = build_insertion_entry(
+            log_id=log_id,
+            context=audit,
+            ttl_content=ttl_content,
+            base_iri=self.audit_base_iri,
+            now=datetime.now(timezone.utc),
+        )
 
         prefixes = extract_prefixes(ttl_content)
         save_prefixes(prefixes)
@@ -122,11 +137,17 @@ class VirtuosoModel:
         nt_data = graph.serialize(format="nt")
         if isinstance(nt_data, bytes):
             nt_data = nt_data.decode()
+        audit_nt = entry.serialize(format="nt")
+        if isinstance(audit_nt, bytes):
+            audit_nt = audit_nt.decode()
 
         sparql_update = f"""
         INSERT DATA {{
           GRAPH <{self.graph_uri}> {{
             {nt_data}
+          }}
+          GRAPH <{self.audit_graph_uri}> {{
+            {audit_nt}
           }}
         }}
         """

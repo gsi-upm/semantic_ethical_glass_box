@@ -16,6 +16,7 @@ from utils.shared_context import SharedContextResolveResponse
 class FakeVirtuosoStore:
     def __init__(self) -> None:
         self.inserted_payloads: list[str] = []
+        self.audits: list[object] = []
         self.last_validated_query: tuple[str, bool] | None = None
         self.last_executed_query: tuple[str, bool] | None = None
         self.ttl_text = "@prefix ex: <https://example.org/> ."
@@ -29,8 +30,9 @@ class FakeVirtuosoStore:
     def ping(self, timeout_s: float = 1.0) -> bool:
         return True
 
-    def insert_ttl(self, ttl_content: str) -> str:
+    def insert_ttl(self, ttl_content: str, *, audit: object) -> str:
         self.inserted_payloads.append(ttl_content)
+        self.audits.append(audit)
         return "log-id-123"
 
     def get_ttls(self) -> str:
@@ -101,6 +103,22 @@ class TestApiEndpointsE2E(unittest.TestCase):
         self.assertEqual(events_response.status_code, 200)
         self.assertEqual(events_response.text, services.virtuoso.ttl_text)
         self.assertIn("text/turtle", events_response.headers["content-type"])
+
+    def test_ttl_insert_audits_the_authenticated_identity_not_the_claimed_user(self) -> None:
+        client, services = _build_test_app(roles=["logger"], virtuoso_ok=True)
+        try:
+            response = client.post(
+                "/ttl",
+                json={"ttl_content": "@prefix ex: <https://example.org/> .", "user": "someone_else"},
+            )
+        finally:
+            client.close()
+
+        self.assertEqual(response.status_code, 201)
+        (audit,) = services.virtuoso.audits
+        self.assertEqual(audit.username, "test_user")
+        self.assertEqual(audit.roles, ("logger",))
+        self.assertEqual(audit.route, "POST /ttl")
 
     def test_ttl_insert_returns_503_when_virtuoso_is_not_ready(self) -> None:
         client, _ = _build_test_app(roles=["admin"], virtuoso_ok=False)

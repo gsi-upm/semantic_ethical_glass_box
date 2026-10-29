@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
+from utils.audit import AuditContext
 from utils.shared_context import (
     SharedContextReviewDecisionResponse,
     SharedContextReviewQueueResponse,
@@ -26,7 +27,7 @@ class GraphStorePort(Protocol):
     def ping(self, timeout_s: float = 1.0) -> bool:
         ...
 
-    def insert_ttl(self, ttl_content: str) -> str:
+    def insert_ttl(self, ttl_content: str, *, audit: AuditContext) -> str:
         ...
 
     def get_ttls(self) -> str:
