@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from rdflib import Graph, Literal, Namespace
+from rdflib import BNode, Graph, Literal, Namespace
 from rdflib.exceptions import ParserError
 from rdflib.namespace import RDF, XSD
 from rdflib.term import Node
@@ -281,6 +281,28 @@ def _validate_semantic_subject_typing(graph: Graph) -> list[TtlValidationIssue]:
     return issues
 
 
+def _validate_blank_nodes(graph: Graph) -> list[TtlValidationIssue]:
+    """Blank nodes are not skolemized, so uploading the same Turtle again stores them again as new nodes."""
+    blank_nodes = {
+        term for subject, _, obj in graph for term in (subject, obj) if isinstance(term, BNode)
+    }
+    if not blank_nodes:
+        return []
+    count = len(blank_nodes)
+    noun = "blank node" if count == 1 else "blank nodes"
+    return [
+        TtlValidationIssue(
+            severity="warning",
+            code="SEM_BLANK_NODES",
+            message=(
+                f"The Turtle contains {count} {noun} (anonymous nodes, [] or _:label, also in lists). "
+                "They are not skolemized: uploading the same Turtle again stores them again as new nodes, "
+                "so the graph duplicates them. Use URIs for resources that may be uploaded more than once."
+            ),
+        )
+    ]
+
+
 def _validate_semantics(graph: Graph, *, triple_count: int) -> list[TtlValidationIssue]:
     issues: list[TtlValidationIssue] = []
 
@@ -301,6 +323,7 @@ def _validate_semantics(graph: Graph, *, triple_count: int) -> list[TtlValidatio
         _validate_emotion_intensity,
         _validate_emotion_category_targets,
         _validate_semantic_subject_typing,
+        _validate_blank_nodes,
     )
     for validator in validators:
         issues.extend(validator(graph))
