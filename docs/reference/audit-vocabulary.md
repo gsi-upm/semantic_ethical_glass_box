@@ -46,7 +46,7 @@ The entry type answers "what happened" (the action). It is the RDF type and is n
 | Property | Used on | Value | Meaning |
 |---|---|---|---|
 | `dcterms:identifier` | entry | `xsd:string` | The `log_id` (UUID). Same value as the tail of the entry IRI. |
-| `prov:startedAtTime` | entry | `xsd:dateTime` | UTC instant the backend started handling the request, always with the `Z` suffix. |
+| `prov:startedAtTime` | entry | `xsd:dateTime` | UTC instant the backend started handling the request, with microseconds and the `Z` suffix. |
 | `prov:wasAssociatedWith` | entry | agent IRI | Who did it: the authenticated user. |
 | `foaf:accountName` | agent | `xsd:string` | The username. |
 | `audit:actorRole` | entry | `xsd:string`, repeatable | Roles the agent held in this request (for example `admin`, `auditor`, `logger`). Kept on the entry, not on the agent, because roles are claims of one token and change over time. |
@@ -71,7 +71,7 @@ An administrator uploads one log through `POST /ttl`:
 <https://example.org/segb/audit/entry/6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10>
     a audit:Insertion ;
     dcterms:identifier "6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10" ;
-    prov:startedAtTime "2026-10-29T10:15:42Z"^^xsd:dateTime ;
+    prov:startedAtTime "2026-10-29T10:15:42.123456Z"^^xsd:dateTime ;
     prov:wasAssociatedWith <https://example.org/segb/audit/agent/alice> ;
     audit:actorRole "admin" , "logger" ;
     audit:originIP "192.168.1.20" ;
@@ -98,7 +98,7 @@ Both endpoints need the `auditor` or `admin` role and read only the audit graph.
 ```json
 {
   "_id": "6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10",
-  "uploaded_at": "2026-10-29T10:15:42.123Z",
+  "uploaded_at": "2026-10-29T10:15:42.123456Z",
   "origin_ip": "192.168.1.20",
   "action_type": "insertion",
   "action": "6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10",
@@ -122,7 +122,7 @@ Errors: `400` without `log_id`, `404` for an unknown or malformed id, `403` for 
 | 0.4.x | Now |
 |---|---|
 | `_id` was a MongoDB ObjectId | `_id` is the UUID that `POST /ttl` and `POST /ttl/delete_all` return as `log_id` |
-| `uploaded_at` was the server's local time, ISO format, no time zone | UTC with milliseconds and a `Z` suffix |
+| `uploaded_at` was the server's local time, ISO format, no time zone | UTC with microseconds and a `Z` suffix |
 | `user_details` was the string form of the token user | an object with `username` and `roles` (the authenticated user, never the `user` field of the body) |
 | `action` was the id of a separate action document | the same value as `_id`: the entry holds its own payload |
 | empty history: `204 No Content` | `200` with `[]` |

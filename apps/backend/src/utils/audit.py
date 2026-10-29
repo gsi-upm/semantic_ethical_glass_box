@@ -33,7 +33,7 @@ def subject_uris(graph: Graph) -> list[URIRef]:
 def _utc_literal(moment: datetime) -> Literal:
     if moment.tzinfo is None or moment.utcoffset() != timedelta(0):
         raise ValueError("Audit timestamps must be timezone-aware UTC datetimes.")
-    text = moment.isoformat(timespec="milliseconds").removesuffix("+00:00") + "Z"
+    text = moment.isoformat(timespec="microseconds").removesuffix("+00:00") + "Z"
     return Literal(text, datatype=XSD.dateTime, normalize=False)
 
 

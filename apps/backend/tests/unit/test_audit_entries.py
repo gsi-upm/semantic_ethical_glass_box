@@ -12,7 +12,7 @@ BASE = "https://example.org/segb/audit/"
 LOG_ID = "6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10"
 ENTRY = URIRef(f"{BASE}entry/{LOG_ID}")
 TTL = '@prefix ex: <http://example.org/> .\nex:greeting1 a ex:Greeting ; ex:text "hi \\"there\\"" .\n'
-NOW = datetime(2026, 10, 29, 10, 15, 42, 123000, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 29, 10, 15, 42, 123456, tzinfo=timezone.utc)
 CONTEXT = AuditContext(username="alice", roles=("logger", "admin"), origin_ip="192.168.1.20", route="POST /ttl")
 
 
@@ -31,7 +31,11 @@ class TestInsertionEntry(unittest.TestCase):
     def test_time_is_utc_with_z_suffix(self) -> None:
         value = _entry().value(ENTRY, PROV.startedAtTime)
         self.assertEqual(value.datatype, XSD.dateTime)
-        self.assertEqual(str(value), "2026-10-29T10:15:42.123Z")
+        self.assertEqual(str(value), "2026-10-29T10:15:42.123456Z")
+
+    def test_time_keeps_microseconds_even_when_they_are_zero(self) -> None:
+        exact = datetime(2026, 10, 29, 10, 15, 42, tzinfo=timezone.utc)
+        self.assertEqual(str(_entry(now=exact).value(ENTRY, PROV.startedAtTime)), "2026-10-29T10:15:42.000000Z")
 
     def test_agent_roles_ip_and_route(self) -> None:
         g = _entry()
@@ -84,7 +88,7 @@ class TestDeletionEntry(unittest.TestCase):
     def test_deletion_shares_the_common_fields_with_insertion(self) -> None:
         g = self._deletion()
         self.assertEqual(g.value(ENTRY, DCTERMS.identifier), Literal(LOG_ID))
-        self.assertEqual(str(g.value(ENTRY, PROV.startedAtTime)), "2026-10-29T10:15:42.123Z")
+        self.assertEqual(str(g.value(ENTRY, PROV.startedAtTime)), "2026-10-29T10:15:42.123456Z")
         self.assertIn((ENTRY, PROV.wasAssociatedWith, URIRef(f"{BASE}agent/alice")), g)
         self.assertEqual({str(o) for o in g.objects(ENTRY, AUDIT.actorRole)}, {"admin"})
         self.assertEqual(g.value(ENTRY, AUDIT.originIP), Literal("10.0.0.1"))
