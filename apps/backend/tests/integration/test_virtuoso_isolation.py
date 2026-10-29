@@ -11,7 +11,7 @@ from requests.auth import HTTPDigestAuth
 
 import virtuoso_harness as harness
 
-GRAPH = "http://amor-segb/it-isolation"
+GRAPH = "http://segb/it-isolation"
 
 
 def _sparql(instance: harness.VirtuosoTestInstance, query: str) -> requests.Response:

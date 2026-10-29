@@ -242,7 +242,7 @@ If the export is non-empty and the UI pages are populated, you have completed th
 **1. `ready: false` on `/healthz/ready`**
 The backend cannot reach Virtuoso. Check the logs:
 ```bash
-docker compose -f docker-compose.yaml logs -f amor-segb amor-segb-virtuoso
+docker compose -f docker-compose.yaml logs -f segb segb-virtuoso
 ```
 
 **2. `401` or `403` while loading the demo dataset**. 

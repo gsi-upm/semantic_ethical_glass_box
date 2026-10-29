@@ -44,7 +44,7 @@ class HarnessNamingTests(unittest.TestCase):
         inst = _instance(FakeDocker())
         for name in (inst.container_name, inst.volume_name):
             self.assertTrue(name.startswith("segb-it-"), name)
-        self.assertNotIn(inst.container_name, {"amor-segb-virtuoso", "segb-db-test"})
+        self.assertNotIn(inst.container_name, {"segb-virtuoso", "segb-db-test"})
         self.assertNotIn(inst.volume_name, {"segb-db-test", "virtuoso_data"})
 
 

@@ -106,6 +106,6 @@ Expected: non-empty Turtle output.
 
 ## Troubleshooting
 
-- `ready=false` on `/healthz/ready`: check `docker compose -f docker-compose.yaml logs -f amor-segb amor-segb-virtuoso`.
+- `ready=false` on `/healthz/ready`: check `docker compose -f docker-compose.yaml logs -f segb segb-virtuoso`.
 - `401/403` while loading demo data: provide a valid `--token` with `admin` role.
 - Empty reports: run the dataset load step again and refresh `/reports`.

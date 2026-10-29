@@ -43,7 +43,7 @@ The high-level flow is:
 
 **In this repository:**
 
-- Virtuoso acts as the triple store (service `amor-segb-virtuoso` in `docker-compose.yaml`).
+- Virtuoso acts as the triple store (service `segb-virtuoso` in `docker-compose.yaml`).
 - The backend ingests logs and persists triples into the configured graph.
 
 **What it is for:**
