@@ -24,7 +24,7 @@ class TestNaming(unittest.TestCase):
                 text = path.read_text(encoding="utf-8")
             except UnicodeDecodeError:
                 continue
-            if any(old in text for old in OLD_NAMES):
+            if any(old in text.lower() for old in OLD_NAMES):
                 offenders.append(name)
         self.assertEqual(offenders, [])
 
