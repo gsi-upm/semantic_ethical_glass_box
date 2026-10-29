@@ -193,6 +193,9 @@ SELECT DISTINCT ?g WHERE { GRAPH ?g { ?s ?p ?o } }
 VIRTUOSO_GRAPH_URI=<the graph name returned by the query>
 ```
 
+Version `1.2.0` also adds an `audit_dumps` volume to the backend (large dumps of deleted graphs; see
+[Audit Vocabulary](../reference/audit-vocabulary.md)). `docker compose up` creates it; include it in your backups.
+
 Also update anything that referred to the old container, service or image names (scripts, `docker compose logs` calls,
 reverse-proxy targets).
 

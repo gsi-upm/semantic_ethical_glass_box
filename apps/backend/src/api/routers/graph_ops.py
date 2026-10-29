@@ -125,13 +125,25 @@ async def delete_all_ttls(
     user: Annotated[User, Depends(validate_token)],
 ):
     require_roles(user, allowed=(Role.ADMIN,))
+
+    if transaction_lock.locked():
+        raise HTTPException(status_code=429, detail="Another transaction is in progress. Please try again later.")
+
     service: LogService = get_log_service(request)
     request_actor = build_request_actor(request, data.user, user.username)
 
-    with request_actor_context(request, request_actor):
-        result = service.delete_all_ttls(
-            actor=request_actor.actor,
-            origin_ip=request_actor.origin_ip,
-        )
+    # Same lock as inserts: nothing can be added between the dump stored in the audit entry and the clear.
+    async with transaction_lock:
+        with request_actor_context(request, request_actor):
+            result = service.delete_all_ttls(
+                actor=request_actor.actor,
+                origin_ip=request_actor.origin_ip,
+                audit=AuditContext(
+                    username=user.username,
+                    roles=tuple(user.roles),
+                    origin_ip=request_actor.origin_ip,
+                    route="POST /ttl/delete_all",
+                ),
+            )
 
     return JSONResponse(content=result, status_code=200)

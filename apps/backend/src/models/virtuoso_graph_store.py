@@ -37,5 +37,5 @@ class VirtuosoGraphStoreAdapter(GraphStorePort):
     def run_custom_query(self, query: str, *, allow_updates: bool = False) -> str:
         return self.client.run_custom_query(query, allow_updates=allow_updates)
 
-    def delete_all_triples(self) -> None:
-        self.client.delete_all_triples()
+    def delete_all_triples(self, *, audit: AuditContext) -> str | None:
+        return self.client.delete_all_triples(audit=audit)

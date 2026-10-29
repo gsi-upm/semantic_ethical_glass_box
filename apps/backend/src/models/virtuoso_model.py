@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import threading
 import time
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -17,7 +19,7 @@ from rdflib.namespace import RDF
 from rdflib.plugins.sparql.parser import parseQuery, parseUpdate
 from requests.auth import HTTPDigestAuth
 
-from utils.audit import AuditContext, build_insertion_entry
+from utils.audit import AuditContext, build_deletion_entry, build_insertion_entry
 from utils.prefix_utils import (
     clean_prefixes_with_numbers,
     extract_prefixes,
@@ -46,6 +48,8 @@ class VirtuosoModel:
         self.graph_uri = os.getenv("VIRTUOSO_GRAPH_URI", "http://segb/events")
         self.audit_graph_uri = os.getenv("VIRTUOSO_AUDIT_GRAPH_URI", "http://segb/audit")
         self.audit_base_iri = os.getenv("AUDIT_BASE_IRI", "http://segb/audit/")
+        self.audit_dump_dir = Path(os.getenv("AUDIT_DUMP_DIR", "/data/audit-dumps"))
+        self.audit_inline_ttl_max_bytes = int(os.getenv("AUDIT_INLINE_TTL_MAX_BYTES", str(4 * 1024 * 1024)))
         self.user = os.getenv("VIRTUOSO_USER", "dba")
         self.password = os.getenv("VIRTUOSO_PASSWORD") or os.getenv("DBA_PASSWORD")
 
@@ -349,11 +353,71 @@ class VirtuosoModel:
             turtle_result = turtle_result.decode()
         return clean_prefixes_with_numbers(turtle_result)
 
-    def delete_all_triples(self) -> None:
-        response = self.get_session().post(
-            self.endpoint,
-            data=f"CLEAR GRAPH <{self.graph_uri}>".encode("utf-8"),
-            headers={"Content-Type": "application/sparql-update"},
-            timeout=30,
+    def delete_all_triples(self, *, audit: AuditContext) -> str | None:
+        """Clears the events graph after storing its full dump in a deletion audit entry.
+
+        The entry and the ``CLEAR`` go in one SPARQL update, so a failed clear leaves no entry. The audit graph is
+        never cleared. Returns the entry id, or ``None`` when the graph was already empty (nothing to record).
+        """
+        ttl_text = self.get_ttls()
+        if not ttl_text.strip():
+            return None
+
+        log_id = str(uuid.uuid4())
+        dump_bytes = ttl_text.encode("utf-8")
+        dump_file: Path | None = None
+        if len(dump_bytes) <= self.audit_inline_ttl_max_bytes:
+            file_fields: dict[str, Any] = {"ttl_content": ttl_text}
+        else:
+            # Virtuoso rejects SPARQL statements of about 10 MB, so a large dump cannot travel inside the entry.
+            dump_file = self._write_dump_file(log_id, dump_bytes)
+            file_fields = {
+                "ttl_content": None,
+                "ttl_file": dump_file.name,
+                "ttl_sha256": hashlib.sha256(dump_bytes).hexdigest(),
+            }
+
+        entry = build_deletion_entry(
+            log_id=log_id,
+            context=audit,
+            base_iri=self.audit_base_iri,
+            now=datetime.now(timezone.utc),
+            **file_fields,
         )
-        response.raise_for_status()
+        audit_nt = entry.serialize(format="nt")
+        if isinstance(audit_nt, bytes):
+            audit_nt = audit_nt.decode()
+
+        sparql_update = f"""
+        INSERT DATA {{
+          GRAPH <{self.audit_graph_uri}> {{
+            {audit_nt}
+          }}
+        }} ;
+        CLEAR GRAPH <{self.graph_uri}>
+        """
+        try:
+            response = self.get_session().post(
+                self.endpoint,
+                data=sparql_update.encode("utf-8"),
+                headers={"Content-Type": "application/sparql-update"},
+                timeout=120,
+            )
+            response.raise_for_status()
+        except BaseException:
+            if dump_file is not None:
+                dump_file.unlink(missing_ok=True)
+            raise
+        return log_id
+
+    def _write_dump_file(self, log_id: str, content: bytes) -> Path:
+        """Durably writes a dump to the audit dump directory; raises before anything is cleared if it cannot."""
+        self.audit_dump_dir.mkdir(parents=True, exist_ok=True)
+        target = self.audit_dump_dir / f"{log_id}.ttl"
+        partial = target.with_suffix(".ttl.part")
+        with open(partial, "wb") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        partial.replace(target)
+        return target

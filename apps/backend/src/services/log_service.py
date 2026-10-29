@@ -100,15 +100,14 @@ class LogService:
         )
         return result
 
-    def delete_all_ttls(self, *, actor: str, origin_ip: str) -> dict:
-        """Deletes graph content in Virtuoso and emits operational logs."""
+    def delete_all_ttls(self, *, actor: str, origin_ip: str, audit: AuditContext) -> dict:
+        """Deletes the events graph (keeping its dump in the audit graph) and emits operational logs."""
         logger.warning("TTL delete-all requested (actor=%s, ip=%s)", actor, origin_ip)
-        ttl_text = self.virtuoso.get_ttls()
+        log_id = self.virtuoso.delete_all_triples(audit=audit)
 
-        if not ttl_text.strip():
+        if log_id is None:
             logger.info("Delete-all skipped because graph is empty (actor=%s, ip=%s)", actor, origin_ip)
             return {"message": "No TTLs to delete"}
 
-        self.virtuoso.delete_all_triples()
-        logger.warning("Graph cleared by delete-all (actor=%s, ip=%s)", actor, origin_ip)
-        return {"message": "Graph cleared."}
+        logger.warning("Graph cleared by delete-all (actor=%s, ip=%s, log_id=%s)", actor, origin_ip, log_id)
+        return {"message": "Graph cleared.", "log_id": log_id}

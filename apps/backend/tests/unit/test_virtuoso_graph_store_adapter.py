@@ -27,7 +27,8 @@ class TestVirtuosoGraphStoreAdapter(unittest.TestCase):
             adapter.run_custom_query("SELECT ?s WHERE { ?s ?p ?o }", allow_updates=False),
             "@prefix ex: <https://example.org/> .",
         )
-        adapter.delete_all_triples()
+        client.delete_all_triples.return_value = "del-1"
+        self.assertEqual(adapter.delete_all_triples(audit=audit), "del-1")
         adapter.close_connection()
 
         client.connect_to_db.assert_called_once_with(retries=2, delay=0.5)
@@ -36,7 +37,7 @@ class TestVirtuosoGraphStoreAdapter(unittest.TestCase):
         client.get_ttls.assert_called_once_with()
         client.validate_query.assert_called_once_with("SELECT * WHERE {}", allow_updates=False)
         client.run_custom_query.assert_called_once_with("SELECT ?s WHERE { ?s ?p ?o }", allow_updates=False)
-        client.delete_all_triples.assert_called_once_with()
+        client.delete_all_triples.assert_called_once_with(audit=audit)
         client.close_connection.assert_called_once_with()
 
 
