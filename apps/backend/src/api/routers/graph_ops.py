@@ -36,6 +36,39 @@ async def validate_ttl(
         )
 
 
+async def insert_with_audit(
+    request: Request,
+    *,
+    ttl_content: str,
+    user: User,
+    claimed_user: str | None,
+    route: str,
+    reject_when_busy: bool,
+) -> dict:
+    """Stores a TTL upload and its audit entry; shared by ``POST /ttl`` and the legacy ``POST /log``."""
+    require_roles(user, allowed=(Role.LOGGER, Role.ADMIN))
+
+    if reject_when_busy and transaction_lock.locked():
+        raise HTTPException(status_code=429, detail="Another transaction is in progress. Please try again later.")
+
+    service: LogService = get_log_service(request)
+    request_actor = build_request_actor(request, claimed_user, user.username)
+
+    async with transaction_lock:
+        with request_actor_context(request, request_actor):
+            return service.insert_ttl(
+                ttl_content=ttl_content,
+                actor=request_actor.actor,
+                origin_ip=request_actor.origin_ip,
+                audit=AuditContext(
+                    username=user.username,
+                    roles=tuple(user.roles),
+                    origin_ip=request_actor.origin_ip,
+                    route=route,
+                ),
+            )
+
+
 @router.post("/ttl")
 async def insert_ttl(
     request: Request,
@@ -43,28 +76,15 @@ async def insert_ttl(
     _: Annotated[None, Depends(require_virtuoso_ready)],
     user: Annotated[User, Depends(validate_token)],
 ):
-    require_roles(user, allowed=(Role.LOGGER, Role.ADMIN))
-
-    if transaction_lock.locked():
-        raise HTTPException(status_code=429, detail="Another transaction is in progress. Please try again later.")
-
-    service: LogService = get_log_service(request)
-    request_actor = build_request_actor(request, data.user, user.username)
-
-    async with transaction_lock:
-        with request_actor_context(request, request_actor):
-            response = service.insert_ttl(
-                ttl_content=data.ttl_content,
-                actor=request_actor.actor,
-                origin_ip=request_actor.origin_ip,
-                audit=AuditContext(
-                    username=user.username,
-                    roles=tuple(user.roles),
-                    origin_ip=request_actor.origin_ip,
-                    route="POST /ttl",
-                ),
-            )
-            return JSONResponse(content=response, status_code=201)
+    response = await insert_with_audit(
+        request,
+        ttl_content=data.ttl_content,
+        user=user,
+        claimed_user=data.user,
+        route="POST /ttl",
+        reject_when_busy=True,
+    )
+    return JSONResponse(content=response, status_code=201)
 
 
 @router.get("/events", response_class=PlainTextResponse)

@@ -18,6 +18,7 @@ class FakeVirtuosoStore:
         self.inserted_payloads: list[str] = []
         self.audits: list[object] = []
         self.history: list[dict] = []
+        self.usage: dict[str, dict] = {}
         self.entries: dict[str, dict] = {}
         self.last_validated_query: tuple[str, bool] | None = None
         self.last_executed_query: tuple[str, bool] | None = None
@@ -52,6 +53,9 @@ class FakeVirtuosoStore:
     def run_custom_query(self, query: str, *, allow_updates: bool = False) -> str:
         self.last_executed_query = (query, allow_updates)
         return "@prefix ex: <https://example.org/> ."
+
+    def route_usage(self, route: str) -> dict:
+        return self.usage.get(route, {"count": 0, "first_used_at": None, "last_used_at": None})
 
     def list_audit_entries(self) -> list[dict]:
         return list(self.history)

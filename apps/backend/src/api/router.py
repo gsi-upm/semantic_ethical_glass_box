@@ -6,12 +6,16 @@ from fastapi import APIRouter
 
 from api.routers.graph_ops import router as graph_router
 from api.routers.health_auth import router as health_auth_router
+from api.routers.legacy import router as legacy_router
+from api.routers.legacy import usage_router as legacy_usage_router
 from api.routers.shared_context_ops import router as shared_context_router
 from api.routers.system_ops import router as system_router
 
 router = APIRouter()
 router.include_router(health_auth_router)
 router.include_router(graph_router)
+router.include_router(legacy_router)
+router.include_router(legacy_usage_router)
 router.include_router(shared_context_router)
 router.include_router(system_router)
 
