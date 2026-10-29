@@ -23,11 +23,13 @@ the few terms PROV-O does not cover, under a small namespace of its own.
 
 | Resource | IRI pattern | Type |
 |---|---|---|
-| Audit entry | `<http://amor-segb/audit/entry/{log_id}>` | `audit:Insertion` or `audit:Deletion` |
-| Agent | `<http://amor-segb/audit/agent/{username}>` | `prov:Agent` |
+| Audit entry | `<{base}entry/{log_id}>` | `audit:Insertion` or `audit:Deletion` |
+| Agent | `<{base}agent/{username}>` | `prov:Agent` |
 
-`{log_id}` is the UUID that `insert_ttl` already generates and today discards. `{username}` is the authenticated
-username, percent-encoded; when authentication is disabled it is `anonymous`.
+`{base}` is the deployment's audit IRI base, a setting; the examples on this page use
+`https://example.org/segb/audit/`. It is unrelated to the graph name `http://amor-segb/audit`. `{log_id}` is the UUID that
+`insert_ttl` already generates and today discards. `{username}` is the authenticated username, percent-encoded; when
+authentication is disabled it is `anonymous`.
 
 ## Classes
 
@@ -65,11 +67,11 @@ An administrator uploads one log through `POST /ttl`:
 @prefix prov:    <http://www.w3.org/ns/prov#> .
 @prefix xsd:     <http://www.w3.org/2001/XMLSchema#> .
 
-<http://amor-segb/audit/entry/6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10>
+<https://example.org/segb/audit/entry/6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10>
     a audit:Insertion ;
     dcterms:identifier "6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10" ;
     prov:startedAtTime "2026-10-29T10:15:42Z"^^xsd:dateTime ;
-    prov:wasAssociatedWith <http://amor-segb/audit/agent/alice> ;
+    prov:wasAssociatedWith <https://example.org/segb/audit/agent/alice> ;
     audit:actorRole "admin" , "logger" ;
     audit:originIP "192.168.1.20" ;
     audit:route "POST /ttl" ;
@@ -77,7 +79,7 @@ An administrator uploads one log through `POST /ttl`:
     audit:ttl """@prefix ex: <http://example.org/> .
 ex:greeting1 a ex:Greeting .""" .
 
-<http://amor-segb/audit/agent/alice>
+<https://example.org/segb/audit/agent/alice>
     a prov:Agent ;
     foaf:accountName "alice" .
 ```
@@ -106,3 +108,4 @@ A deletion has the same shape with `a audit:Deletion`, `audit:route "DELETE /eve
 1. Namespace `audit:` under `ontology/segb/`: keep it separate, or add the terms to `segb.ttl` later?
 2. `prov:startedAtTime` as the single timestamp, or also `prov:endedAtTime` for the commit instant?
 3. Roles as plain strings on the entry (chosen) versus PROV qualified associations (`prov:hadRole`).
+4. Default value of the IRI base (`{base}`) when the setting is not provided.
