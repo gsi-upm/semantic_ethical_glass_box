@@ -7,6 +7,7 @@ from typing import Any
 
 from models.virtuoso_model import VirtuosoModel
 from services.ports import GraphStorePort
+from utils.audit import AuditContext
 
 
 @dataclass(slots=True)
@@ -24,8 +25,8 @@ class VirtuosoGraphStoreAdapter(GraphStorePort):
     def ping(self, timeout_s: float = 1.0) -> bool:
         return self.client.ping(timeout_s=timeout_s)
 
-    def insert_ttl(self, ttl_content: str) -> str:
-        return self.client.insert_ttl(ttl_content)
+    def insert_ttl(self, ttl_content: str, *, audit: AuditContext) -> str:
+        return self.client.insert_ttl(ttl_content, audit=audit)
 
     def get_ttls(self) -> str:
         return self.client.get_ttls()

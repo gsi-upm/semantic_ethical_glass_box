@@ -29,7 +29,7 @@ the few terms PROV-O does not cover, under a small namespace of its own.
 `{base}` is the deployment's audit IRI base, a setting; the examples on this page use
 `https://example.org/segb/audit/`. It is unrelated to the graph name `http://segb/audit`. `{log_id}` is the UUID that
 `insert_ttl` already generates and today discards. `{username}` is the authenticated username, percent-encoded; when
-authentication is disabled it is `anonymous`.
+authentication is disabled it is `anonymous_user`.
 
 ## Classes
 
@@ -87,8 +87,17 @@ ex:greeting1 a ex:Greeting .""" .
 A deletion has the same shape with `a audit:Deletion`, `audit:route "DELETE /events"` (or whichever route is used), no
 `audit:mentionsSubject`, and `audit:ttl` holding the removed graph.
 
+## Settings
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `VIRTUOSO_AUDIT_GRAPH_URI` | `http://segb/audit` | Named graph that holds the audit trail. |
+| `AUDIT_BASE_IRI` | `http://segb/audit/` | The `{base}` of entry and agent IRIs. |
+
 ## Rules
 
+- Every `POST /ttl` writes its audit entry in the same SPARQL update as the events, so a failed insert leaves no entry.
+- The agent is the authenticated user (the token), never the `user` field of the request body, which is a client claim.
 - The audit graph is append-only. No endpoint clears or edits it, including the deletion of `events`.
 - Uploading the same Turtle twice writes one set of triples to `events` and two entries to `audit`, each with its own
   `log_id`.
@@ -108,4 +117,3 @@ A deletion has the same shape with `a audit:Deletion`, `audit:route "DELETE /eve
 1. Namespace `audit:` under `ontology/segb/`: keep it separate, or add the terms to `segb.ttl` later?
 2. `prov:startedAtTime` as the single timestamp, or also `prov:endedAtTime` for the commit instant?
 3. Roles as plain strings on the entry (chosen) versus PROV qualified associations (`prov:hadRole`).
-4. Default value of the IRI base (`{base}`) when the setting is not provided.
