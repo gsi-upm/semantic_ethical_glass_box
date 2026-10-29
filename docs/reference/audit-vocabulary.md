@@ -53,7 +53,8 @@ The entry type answers "what happened" (the action). It is the RDF type and is n
 | `audit:originIP` | entry | `xsd:string` | Client address: first `X-Forwarded-For` hop if present, otherwise the socket peer. See the caveat below. |
 | `audit:route` | entry | `xsd:string` | Method and path that triggered the entry, for example `POST /ttl` or `POST /log` (legacy). |
 | `audit:ttl` | entry | `xsd:string` | The Turtle exactly as received (insertion) or the full export of `events` just before it was cleared (deletion). |
-| `audit:ttlFile` | entry | `xsd:string` | Only if the store rejects a very large literal: path of a file in the data volume holding the Turtle. Then `audit:ttl` is absent. |
+| `audit:ttlFile` | deletion | `xsd:string` | Only for a dump too large to embed (see "Large dumps"): name of the file in the audit dump directory that holds the Turtle. Then `audit:ttl` is absent. |
+| `audit:ttlSha256` | deletion | `xsd:string` | SHA-256 (hex) of that file, so the entry proves the file was not altered. Always present with `audit:ttlFile`. |
 | `audit:mentionsSubject` | insertion | IRI, repeatable | Every URI subject that appears in the upload. Blank-node subjects are not listed (see Limitations). |
 
 ## Example
@@ -84,8 +85,24 @@ ex:greeting1 a ex:Greeting .""" .
     foaf:accountName "alice" .
 ```
 
-A deletion has the same shape with `a audit:Deletion`, `audit:route "DELETE /events"` (or whichever route is used), no
-`audit:mentionsSubject`, and `audit:ttl` holding the removed graph.
+A deletion (`POST /ttl/delete_all`) has the same shape with `a audit:Deletion`, `audit:route "POST /ttl/delete_all"`, no
+`audit:mentionsSubject`, and `audit:ttl` holding the removed graph exactly as `GET /events` would have returned it. Its
+`log_id` is returned in the response. Deleting an empty graph removes nothing, so it writes no entry.
+
+## Large dumps
+
+Virtuoso rejects a SPARQL statement of about 10 MB, and a single literal of that size, so a big `events` graph cannot
+travel inside its own deletion entry. Checked against Virtuoso 7.2.16: a literal of 5 MB is accepted and one of 10 MB
+is not; splitting the dump into several literals in the same statement does not help, because the limit is on the whole
+statement.
+
+- A dump of up to `AUDIT_INLINE_TTL_MAX_BYTES` (4 MiB) is embedded as `audit:ttl`.
+- A bigger one is first written and fsynced to `AUDIT_DUMP_DIR` as `<log_id>.ttl`; the entry then carries
+  `audit:ttlFile` (the file name) and `audit:ttlSha256`. If the file cannot be written, nothing is cleared.
+- The entry and the `CLEAR` run in one SPARQL update, so a failed clear leaves no entry; the file written for it is
+  removed.
+- The directory is a volume (`audit_dumps` in the compose files). Back it up together with the Virtuoso data: an entry
+  that points to a missing file proves the deletion happened but cannot show what was deleted.
 
 ## Settings
 
@@ -93,12 +110,15 @@ A deletion has the same shape with `a audit:Deletion`, `audit:route "DELETE /eve
 |---|---|---|
 | `VIRTUOSO_AUDIT_GRAPH_URI` | `http://segb/audit` | Named graph that holds the audit trail. |
 | `AUDIT_BASE_IRI` | `http://segb/audit/` | The `{base}` of entry and agent IRIs. |
+| `AUDIT_DUMP_DIR` | `/data/audit-dumps` | Where dumps too large to embed are written. |
+| `AUDIT_INLINE_TTL_MAX_BYTES` | `4194304` | Largest dump embedded in the entry; above it the dump goes to a file. |
 
 ## Rules
 
 - Every `POST /ttl` writes its audit entry in the same SPARQL update as the events, so a failed insert leaves no entry.
 - The agent is the authenticated user (the token), never the `user` field of the request body, which is a client claim.
-- The audit graph is append-only. No endpoint clears or edits it, including the deletion of `events`.
+- The audit graph is append-only. No endpoint clears or edits it, including the deletion of `events`, which stores the removed graph in a `Deletion` entry first.
+- Deleting `events` takes the same lock as inserting, so nothing can be added between the dump stored in the entry and the clear.
 - Uploading the same Turtle twice writes one set of triples to `events` and two entries to `audit`, each with its own
   `log_id`.
 - Reading `audit` needs the `auditor` or `admin` role, and `/query` cannot reach it with a `GRAPH` clause unless the role

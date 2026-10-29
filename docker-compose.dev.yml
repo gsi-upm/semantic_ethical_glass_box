@@ -44,6 +44,7 @@ services:
       - ./apps/backend/api_info/segb/api_info.json:/app/api_info.json
       - ./apps/backend/api_info/segb/api_description.md:/app/api_description.md
       - ./logs:/logs
+      - audit_dumps:/data/audit-dumps
 
   # Virtuoso triple store
   segb-virtuoso:
@@ -84,5 +85,6 @@ networks:
     driver: bridge
 
 volumes:
+  audit_dumps:
   virtuoso_data:
   segb_ui_node_modules:

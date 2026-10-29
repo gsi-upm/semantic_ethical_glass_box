@@ -51,8 +51,9 @@ class FakeVirtuosoStore:
         self.last_executed_query = (query, allow_updates)
         return "@prefix ex: <https://example.org/> ."
 
-    def delete_all_triples(self) -> None:
-        return None
+    def delete_all_triples(self, *, audit: object) -> str | None:
+        self.audits.append(audit)
+        return "del-log-id"
 
 
 def _build_test_app(*, roles: list[str], virtuoso_ok: bool = True) -> tuple[TestClient, SimpleNamespace]:
@@ -119,6 +120,18 @@ class TestApiEndpointsE2E(unittest.TestCase):
         self.assertEqual(audit.username, "test_user")
         self.assertEqual(audit.roles, ("logger",))
         self.assertEqual(audit.route, "POST /ttl")
+
+    def test_delete_all_audits_the_authenticated_identity_and_returns_the_log_id(self) -> None:
+        client, services = _build_test_app(roles=["admin"], virtuoso_ok=True)
+        try:
+            response = client.post("/ttl/delete_all", json={"user": "someone_else"})
+        finally:
+            client.close()
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["log_id"], "del-log-id")
+        (audit,) = services.virtuoso.audits
+        self.assertEqual((audit.username, audit.roles, audit.route), ("test_user", ("admin",), "POST /ttl/delete_all"))
 
     def test_ttl_insert_returns_503_when_virtuoso_is_not_ready(self) -> None:
         client, _ = _build_test_app(roles=["admin"], virtuoso_ok=False)

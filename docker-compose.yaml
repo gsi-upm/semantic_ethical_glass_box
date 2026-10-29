@@ -22,6 +22,7 @@ services:
       - VIRTUOSO_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
     volumes:
       - ./logs:/logs
+      - audit_dumps:/data/audit-dumps
     restart: always
 
   # ─────────────────────────────
@@ -71,4 +72,5 @@ networks:
 # Persistent volumes
 # ─────────────────────────────
 volumes:
+  audit_dumps:
   virtuoso_data:

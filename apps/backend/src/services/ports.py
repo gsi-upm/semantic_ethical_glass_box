@@ -39,7 +39,7 @@ class GraphStorePort(Protocol):
     def run_custom_query(self, query: str, *, allow_updates: bool = False) -> str:
         ...
 
-    def delete_all_triples(self) -> None:
+    def delete_all_triples(self, *, audit: AuditContext) -> str | None:
         ...
 
 

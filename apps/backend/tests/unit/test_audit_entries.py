@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from rdflib import BNode, Graph, Literal, URIRef
 from rdflib.namespace import FOAF, RDF, XSD
 
-from utils.audit import AUDIT, DCTERMS, PROV, AuditContext, build_insertion_entry, subject_uris
+from utils.audit import AUDIT, DCTERMS, PROV, AuditContext, build_deletion_entry, build_insertion_entry, subject_uris
 
 BASE = "https://example.org/segb/audit/"
 LOG_ID = "6f1f2a4e-9c0b-4c8a-b2d5-3a7c1e5d9f10"
@@ -64,6 +64,44 @@ class TestInsertionEntry(unittest.TestCase):
     def test_naive_datetime_is_rejected(self) -> None:
         with self.assertRaises(ValueError):
             _entry(now=datetime(2026, 10, 29, 10, 0, 0))
+
+
+class TestDeletionEntry(unittest.TestCase):
+    def _deletion(self, **overrides) -> Graph:
+        context = AuditContext(username="alice", roles=("admin",), origin_ip="10.0.0.1", route="POST /ttl/delete_all")
+        args = dict(log_id=LOG_ID, context=context, ttl_content=TTL, base_iri=BASE, now=NOW)
+        args.update(overrides)
+        return build_deletion_entry(**args)
+
+    def test_entry_is_a_deletion_with_the_removed_ttl_and_no_subjects(self) -> None:
+        g = self._deletion()
+        self.assertIn((ENTRY, RDF.type, AUDIT.Deletion), g)
+        self.assertNotIn((ENTRY, RDF.type, AUDIT.Insertion), g)
+        self.assertEqual(str(g.value(ENTRY, AUDIT.ttl)), TTL)
+        self.assertEqual(g.value(ENTRY, AUDIT.route), Literal("POST /ttl/delete_all"))
+        self.assertIsNone(g.value(ENTRY, AUDIT.mentionsSubject))
+
+    def test_deletion_shares_the_common_fields_with_insertion(self) -> None:
+        g = self._deletion()
+        self.assertEqual(g.value(ENTRY, DCTERMS.identifier), Literal(LOG_ID))
+        self.assertEqual(str(g.value(ENTRY, PROV.startedAtTime)), "2026-10-29T10:15:42.123Z")
+        self.assertIn((ENTRY, PROV.wasAssociatedWith, URIRef(f"{BASE}agent/alice")), g)
+        self.assertEqual({str(o) for o in g.objects(ENTRY, AUDIT.actorRole)}, {"admin"})
+        self.assertEqual(g.value(ENTRY, AUDIT.originIP), Literal("10.0.0.1"))
+
+    def test_a_dump_kept_in_a_file_is_referenced_instead_of_embedded(self) -> None:
+        g = self._deletion(ttl_content=None, ttl_file=f"{LOG_ID}.ttl", ttl_sha256="ab" * 32)
+        self.assertEqual(g.value(ENTRY, AUDIT.ttlFile), Literal(f"{LOG_ID}.ttl"))
+        self.assertEqual(g.value(ENTRY, AUDIT.ttlSha256), Literal("ab" * 32))
+        self.assertIsNone(g.value(ENTRY, AUDIT.ttl))
+
+    def test_exactly_one_of_embedded_ttl_or_file_is_required(self) -> None:
+        with self.assertRaises(ValueError):
+            self._deletion(ttl_content=None)
+        with self.assertRaises(ValueError):
+            self._deletion(ttl_content=TTL, ttl_file="x.ttl", ttl_sha256="00")
+        with self.assertRaises(ValueError):
+            self._deletion(ttl_content=None, ttl_file="x.ttl")  # a file without its hash
 
 
 class TestSubjectUris(unittest.TestCase):

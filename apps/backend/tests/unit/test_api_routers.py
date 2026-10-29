@@ -76,6 +76,26 @@ class TestApiRouters(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 429)
         self.assertIn("Another transaction is in progress", context.exception.detail)
 
+    def test_delete_all_rejects_when_transaction_lock_is_already_taken(self) -> None:
+        busy_lock = Mock()
+        busy_lock.locked.return_value = True
+
+        with (
+            patch.object(graph_ops, "transaction_lock", busy_lock),
+            patch("api.routers.graph_ops.require_roles"),
+        ):
+            with self.assertRaises(HTTPException) as context:
+                asyncio.run(
+                    graph_ops.delete_all_ttls(
+                        request=self.request,  # type: ignore[arg-type]
+                        data=graph_ops.DeleteRequest(),
+                        _=None,
+                        user=self.admin_user,
+                    )
+                )
+
+        self.assertEqual(context.exception.status_code, 429)
+
     def test_shared_context_resolve_maps_value_error_to_http_422(self) -> None:
         service = Mock()
         service.resolve.side_effect = ValueError("event_kind must be provided")
