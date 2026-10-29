@@ -36,6 +36,30 @@ SEGB_INTEGRATION=1 PYTHONPATH=apps/backend/src:packages/semantic_log_generator/s
 
 Requires a working `docker` CLI. The image `openlink/virtuoso-opensource-7:7.2.16` is pulled on first use.
 
+To verify query account isolation specifically, using the installed virtual environment:
+
+```bash
+SEGB_INTEGRATION=1 PYTHONPATH=apps/backend/src:apps/backend/tests/integration \
+  .venv/bin/pytest -q --disable-warnings \
+  apps/backend/tests/integration/test_query_isolation_real.py \
+  apps/backend/tests/integration/test_query_reader_real.py
+```
+
+The reader suite runs the same provisioning script as Compose. It tests event SELECTs, audit isolation with the lexical
+filter disabled, direct authenticated audit reads without dataset pinning, the unpinned graph-name metadata leak,
+the API's dataset pin, a SERVICE endpoint with a different identity, denied updates and SQL escapes (including raw
+SQL audit row/count reads through `bif:exec`), unchanged graph contents, writer/auditor/deletion behavior, password
+rotation, stale graph grants, `nobody` permissions, inherited update roles, and startup refusal without a safe reader
+account (including an empty audit graph). Direct grants, EXECUTE inherited from `PUBLIC` or `SPARQL_SELECT` on a
+writing routine (also run through the reader's SPARQL), an extra role such as `SPARQL_SELECT_FED` (with the
+federation leak as control), and a shipped routine replaced after provisioning must all block reprovisioning and
+startup. A missing drift check must block startup too. The reviewed manifest is
+`apps/backend/virtuoso/reader-sql-policy.manifest`.
+See the deployment notes for the
+[metadata, federation, and raw SQL boundaries](../docs/operations/centralized-deployment.md#query-account-isolation).
+Database privilege tests are never replaced with mocks or silently skipped when `SEGB_INTEGRATION=1` and Docker
+is unavailable.
+
 The harness (`apps/backend/tests/integration/virtuoso_harness.py`, class `VirtuosoTestInstance`) starts a disposable Virtuoso per test class or run:
 
 - its own container and volume, both named `segb-it-<random id>` and labelled `segb.integration-test=<id>`;
@@ -46,7 +70,7 @@ Two runs in parallel therefore do not interfere, and no existing container or vo
 
 ```python
 with VirtuosoTestInstance() as virtuoso:
-    os.environ.update(virtuoso.environ())
+    os.environ.update({**virtuoso.environ(), **virtuoso.provision_query_reader()})
     ...
 ```
 

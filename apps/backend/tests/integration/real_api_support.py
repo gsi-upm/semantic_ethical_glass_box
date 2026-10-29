@@ -38,8 +38,10 @@ class RealApiTestCase(unittest.TestCase):
         cls.addClassCleanup(cls.virtuoso.stop)
         cls.dump_dir = Path(tempfile.mkdtemp(prefix="segb-it-dumps-"))
         cls.addClassCleanup(shutil.rmtree, cls.dump_dir, True)
+        cls.reader = cls.virtuoso.provision_query_reader(events_graph=EVENTS, audit_graph=AUDIT)
         env = {
             **cls.virtuoso.environ(),
+            **cls.reader,
             "VIRTUOSO_GRAPH_URI": EVENTS,
             "VIRTUOSO_AUDIT_GRAPH_URI": AUDIT,
             "AUDIT_BASE_IRI": "https://example.org/segb/audit/",
@@ -57,8 +59,9 @@ class RealApiTestCase(unittest.TestCase):
 
         VirtuosoModel._instance = None
         VirtuosoModel._session = None
-        cls.addClassCleanup(lambda: (setattr(VirtuosoModel, "_instance", None), setattr(VirtuosoModel, "_session", None)))
+        VirtuosoModel._reader_session = None
         model = VirtuosoModel()
+        cls.addClassCleanup(lambda: (model.close_connection(), setattr(VirtuosoModel, "_instance", None)))
         model.connect_to_db(retries=30, delay=2)
 
         app = FastAPI()
