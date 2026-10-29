@@ -2,8 +2,8 @@
 
 ## What This Page Is For
 
-From `1.2.0` the backend keeps an append-only audit trail in its own named graph, `http://amor-segb/audit`, separate
-from the event graph `http://amor-segb/events`. This page fixes the terms used in that graph. It is the contract for the
+From `1.2.0` the backend keeps an append-only audit trail in its own named graph, `http://segb/audit`, separate
+from the event graph `http://segb/events`. This page fixes the terms used in that graph. It is the contract for the
 audit-on-insert, audit-on-delete and `/history` work; code follows this page, not the other way round.
 
 The audit graph is built on [PROV-O](https://www.w3.org/TR/prov-o/) and the [SEGB ontology](ontology.md). It adds only
@@ -27,7 +27,7 @@ the few terms PROV-O does not cover, under a small namespace of its own.
 | Agent | `<{base}agent/{username}>` | `prov:Agent` |
 
 `{base}` is the deployment's audit IRI base, a setting; the examples on this page use
-`https://example.org/segb/audit/`. It is unrelated to the graph name `http://amor-segb/audit`. `{log_id}` is the UUID that
+`https://example.org/segb/audit/`. It is unrelated to the graph name `http://segb/audit`. `{log_id}` is the UUID that
 `insert_ttl` already generates and today discards. `{username}` is the authenticated username, percent-encoded; when
 authentication is disabled it is `anonymous`.
 
