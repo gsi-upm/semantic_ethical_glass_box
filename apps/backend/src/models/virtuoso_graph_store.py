@@ -39,3 +39,9 @@ class VirtuosoGraphStoreAdapter(GraphStorePort):
 
     def delete_all_triples(self, *, audit: AuditContext) -> str | None:
         return self.client.delete_all_triples(audit=audit)
+
+    def list_audit_entries(self) -> list[dict[str, Any]]:
+        return self.client.list_audit_entries()
+
+    def get_audit_entry(self, log_id: str) -> dict[str, Any] | None:
+        return self.client.get_audit_entry(log_id)

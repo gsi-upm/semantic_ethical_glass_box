@@ -111,3 +111,11 @@ class LogService:
 
         logger.warning("Graph cleared by delete-all (actor=%s, ip=%s, log_id=%s)", actor, origin_ip, log_id)
         return {"message": "Graph cleared.", "log_id": log_id}
+
+    def audit_history(self, *, actor: str, origin_ip: str) -> list[dict]:
+        logger.info("Audit history requested (actor=%s, ip=%s)", actor, origin_ip)
+        return self.virtuoso.list_audit_entries()
+
+    def audit_entry(self, *, log_id: str, actor: str, origin_ip: str) -> dict | None:
+        logger.info("Audit entry requested (actor=%s, ip=%s, log_id=%s)", actor, origin_ip, log_id)
+        return self.virtuoso.get_audit_entry(log_id)

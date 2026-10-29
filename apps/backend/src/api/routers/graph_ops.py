@@ -147,3 +147,41 @@ async def delete_all_ttls(
             )
 
     return JSONResponse(content=result, status_code=200)
+
+
+@router.get("/history")
+async def get_history(
+    request: Request,
+    _: Annotated[None, Depends(require_virtuoso_ready)],
+    user: Annotated[User, Depends(validate_token)],
+):
+    require_roles(user, allowed=(Role.AUDITOR, Role.ADMIN))
+    service: LogService = get_log_service(request)
+    request_actor = build_request_actor(request, user.username)
+
+    with request_actor_context(request, request_actor):
+        history = service.audit_history(actor=request_actor.actor, origin_ip=request_actor.origin_ip)
+
+    return JSONResponse(content=history, status_code=200)
+
+
+@router.get("/log")
+async def get_log(
+    request: Request,
+    _: Annotated[None, Depends(require_virtuoso_ready)],
+    user: Annotated[User, Depends(validate_token)],
+    log_id: str | None = None,
+):
+    require_roles(user, allowed=(Role.AUDITOR, Role.ADMIN))
+    if not log_id:
+        raise HTTPException(status_code=400, detail="Not received data or invalid data")
+
+    service: LogService = get_log_service(request)
+    request_actor = build_request_actor(request, user.username)
+
+    with request_actor_context(request, request_actor):
+        entry = service.audit_entry(log_id=log_id, actor=request_actor.actor, origin_ip=request_actor.origin_ip)
+
+    if entry is None:
+        raise HTTPException(status_code=404, detail="Log info not found")
+    return JSONResponse(content=entry, status_code=200)

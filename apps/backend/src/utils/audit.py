@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 from datetime import datetime, timedelta
 from urllib.parse import quote
 
@@ -119,3 +120,65 @@ def build_deletion_entry(
         ttl_sha256=ttl_sha256,
     )
     return graph
+
+
+@dataclass(slots=True, frozen=True)
+class AuditEntryView:
+    """One audit entry as served by ``GET /history`` (``summary``) and ``GET /log`` (``summary`` + ``action``)."""
+
+    summary: dict[str, Any]
+    action: dict[str, Any]
+
+
+_RDF_TYPE = str(RDF.type)
+_KINDS = {str(AUDIT.Insertion): "insertion", str(AUDIT.Deletion): "deletion"}
+
+
+def entries_from_rows(rows: list[dict[str, str]], agent_names: dict[str, str]) -> list[AuditEntryView]:
+    """Groups ``{"e", "p", "o"}`` rows of the audit graph into entry views, oldest first.
+
+    The summary keeps the keys of the 0.4.x history (``_id``, ``uploaded_at``, ``origin_ip``, ``action_type``,
+    ``action``, ``user_details``); ``route`` is new and ``user_details`` is an object instead of a string.
+    """
+    grouped: dict[str, dict[str, list[str]]] = {}
+    for row in rows:
+        grouped.setdefault(row["e"], {}).setdefault(row["p"], []).append(row["o"])
+
+    def first(props: dict[str, list[str]], predicate: Any) -> str | None:
+        values = props.get(str(predicate))
+        return values[0] if values else None
+
+    views = []
+    for props in grouped.values():
+        kind = next((_KINDS[t] for t in props.get(_RDF_TYPE, []) if t in _KINDS), None)
+        if kind is None:
+            continue
+        entry_id = first(props, DCTERMS.identifier) or ""
+        agent = first(props, PROV.wasAssociatedWith)
+        summary = {
+            "_id": entry_id,
+            "uploaded_at": first(props, PROV.startedAtTime),
+            "origin_ip": first(props, AUDIT.originIP),
+            "action_type": kind,
+            "action": entry_id,
+            "user_details": {
+                "username": agent_names.get(agent) if agent else None,
+                "roles": sorted(props.get(str(AUDIT.actorRole), [])),
+            },
+            "route": first(props, AUDIT.route),
+        }
+        ttl = first(props, AUDIT.ttl)
+        if kind == "insertion":
+            action: dict[str, Any] = {
+                "ttl_content": ttl,
+                "subjects": sorted(props.get(str(AUDIT.mentionsSubject), [])),
+            }
+        elif ttl is not None:
+            action = {"ttl_deleted_graph": ttl}
+        else:
+            action = {
+                "ttl_deleted_graph_file": first(props, AUDIT.ttlFile),
+                "ttl_deleted_graph_sha256": first(props, AUDIT.ttlSha256),
+            }
+        views.append(AuditEntryView(summary=summary, action=action))
+    return sorted(views, key=lambda v: (v.summary["uploaded_at"] or "", v.summary["_id"]))

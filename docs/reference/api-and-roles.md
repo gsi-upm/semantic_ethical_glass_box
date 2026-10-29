@@ -23,7 +23,9 @@ SEGB behaves differently depending on `SECRET_KEY`.
 | `GET` | `/events` | `auditor` or `admin` | Export the current graph as Turtle |
 | `GET` | `/query` | `auditor` or `admin` | Execute a read-only SPARQL query |
 | `POST` | `/query/validate` | `auditor` or `admin` | Validate a read-only SPARQL query |
-| `POST` | `/ttl/delete_all` | `admin` | Delete graph content |
+| `POST` | `/ttl/delete_all` | `admin` | Delete graph content (the removed graph is kept in the audit trail) |
+| `GET` | `/history` | `auditor` or `admin` | List the audit entries, oldest first |
+| `GET` | `/log?log_id=<id>` | `auditor` or `admin` | One audit entry with the uploaded or deleted Turtle |
 | `GET` | `/logs/server` | `admin` | Read backend server logs |
 | `POST` | `/shared-context/resolve` | `logger` or `admin` | Resolve or create a shared context |
 | `POST` | `/shared-context/reconcile` | `admin` | Re-run backend-side shared-context reconciliation |

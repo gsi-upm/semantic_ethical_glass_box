@@ -19,7 +19,13 @@ from rdflib.namespace import RDF
 from rdflib.plugins.sparql.parser import parseQuery, parseUpdate
 from requests.auth import HTTPDigestAuth
 
-from utils.audit import AuditContext, build_deletion_entry, build_insertion_entry
+from utils.audit import (
+    AUDIT,
+    AuditContext,
+    build_deletion_entry,
+    build_insertion_entry,
+    entries_from_rows,
+)
 from utils.prefix_utils import (
     clean_prefixes_with_numbers,
     extract_prefixes,
@@ -164,6 +170,59 @@ class VirtuosoModel:
         )
         response.raise_for_status()
         return log_id
+
+    def _audit_select(self, query: str) -> list[dict[str, Any]]:
+        response = self.get_session().get(
+            self.endpoint,
+            params={"query": query},
+            headers={"Accept": "application/sparql-results+json"},
+            timeout=60,
+        )
+        response.raise_for_status()
+        return response.json()["results"]["bindings"]
+
+    def _audit_agent_names(self) -> dict[str, str]:
+        rows = self._audit_select(
+            f"SELECT ?a ?n FROM <{self.audit_graph_uri}> WHERE {{ ?a <http://xmlns.com/foaf/0.1/accountName> ?n }}"
+        )
+        return {row["a"]["value"]: row["n"]["value"] for row in rows}
+
+    def list_audit_entries(self) -> list[dict[str, Any]]:
+        """Summaries of every audit entry, oldest first. Reads only the audit graph and skips the TTL payloads."""
+        rows = self._audit_select(
+            f"""
+            SELECT ?e ?p ?o FROM <{self.audit_graph_uri}>
+            WHERE {{
+              ?e a ?kind . FILTER(?kind IN (<{AUDIT.Insertion}>, <{AUDIT.Deletion}>))
+              ?e ?p ?o .
+              FILTER(?p NOT IN (<{AUDIT.ttl}>, <{AUDIT.mentionsSubject}>))
+            }}
+            """
+        )
+        flat = [{"e": r["e"]["value"], "p": r["p"]["value"], "o": r["o"]["value"]} for r in rows]
+        return [view.summary for view in entries_from_rows(flat, self._audit_agent_names() if flat else {})]
+
+    def get_audit_entry(self, log_id: str) -> dict[str, Any] | None:
+        """One audit entry with its payload, or ``None`` when the id is not a UUID or is unknown.
+
+        The id is interpolated into an IRI, so anything that is not a canonical UUID is rejected up front.
+        """
+        try:
+            canonical = str(uuid.UUID(log_id))
+        except (ValueError, AttributeError, TypeError):
+            return None
+        if canonical != log_id.lower():
+            return None
+        base = self.audit_base_iri if self.audit_base_iri.endswith("/") else f"{self.audit_base_iri}/"
+        entry = f"{base}entry/{canonical}"
+        rows = self._audit_select(f"SELECT ?p ?o FROM <{self.audit_graph_uri}> WHERE {{ <{entry}> ?p ?o }}")
+        if not rows:
+            return None
+        flat = [{"e": entry, "p": r["p"]["value"], "o": r["o"]["value"]} for r in rows]
+        views = entries_from_rows(flat, self._audit_agent_names())
+        if not views:
+            return None
+        return {"log": views[0].summary, "action": views[0].action}
 
     def get_ttls(self) -> str:
         query = f"""
