@@ -182,6 +182,22 @@ class TestApiEndpointsE2E(unittest.TestCase):
             client.close()
         self.assertEqual((known.status_code, known.json()["action"]), (200, {"ttl_content": "x"}))
 
+    def test_validate_reports_blank_nodes_as_a_warning_not_an_error(self) -> None:
+        client, services = _build_test_app(roles=["admin"])
+        try:
+            response = client.post(
+                "/ttl/validate", json={"ttl_content": "@prefix ex: <https://example.org/> .\nex:a ex:p [ ex:q 1 ] ."}
+            )
+        finally:
+            client.close()
+
+        body = response.json()
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(body["valid"])
+        (issue,) = [i for i in body["issues"] if i["code"] == "SEM_BLANK_NODES"]
+        self.assertEqual(issue["severity"], "warning")
+        self.assertEqual(services.virtuoso.inserted_payloads, [])
+
     def test_ttl_insert_returns_503_when_virtuoso_is_not_ready(self) -> None:
         client, _ = _build_test_app(roles=["admin"], virtuoso_ok=False)
         try:

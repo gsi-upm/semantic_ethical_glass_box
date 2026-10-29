@@ -66,6 +66,16 @@ These are the request shapes you will use most often.
 }
 ```
 
+The response lists `issues`, each with a `severity` of `error` or `warning`. Only errors make `valid` false.
+
+#### Blank nodes
+
+Blank nodes (`[]`, `[ ex:p 1 ]`, `_:label`, and the nodes that make up a list `( 1 2 )`) are **not skolemized**. Uploading
+the same Turtle twice stores its blank nodes twice, as new nodes, so the triples that involve them are duplicated; a
+triple with only URIs is stored once however many times it is uploaded. The validator reports this as the warning
+`SEM_BLANK_NODES`, with the number of blank nodes found, and the Turtle stays valid. Use URIs for any resource that
+may be uploaded more than once, for example for each log entry or measurement.
+
 ### Insert Turtle
 
 `POST /ttl`
