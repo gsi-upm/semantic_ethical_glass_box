@@ -35,6 +35,24 @@ from utils.prefix_utils import (
 from utils.query_scope import QueryScopeError, check_read_query_scope
 
 
+class _RevokedAdapter(requests.adapters.BaseAdapter):
+    """Transport that refuses every request, so a session that was dropped can no longer reach Virtuoso."""
+
+    def send(self, *args, **kwargs):
+        raise RuntimeError("The read-only Virtuoso session was revoked; user queries are not run without it.")
+
+    def close(self) -> None:
+        pass
+
+
+def _revoke(session: requests.Session) -> None:
+    """Closes a session and makes any thread still holding it fail instead of querying (close() alone does not)."""
+    session.close()
+    adapter = _RevokedAdapter()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+
+
 class VirtuosoModel:
     """Thread-safe singleton wrapper around Virtuoso HTTP API.
 
@@ -232,9 +250,10 @@ class VirtuosoModel:
 
     def close_connection(self) -> None:
         with VirtuosoModel._lock:
-            for session in (VirtuosoModel._session, VirtuosoModel._reader_session):
-                if session:
-                    session.close()
+            if VirtuosoModel._session:
+                VirtuosoModel._session.close()
+            if VirtuosoModel._reader_session:
+                _revoke(VirtuosoModel._reader_session)
             VirtuosoModel._session = None
             VirtuosoModel._reader_session = None
             VirtuosoModel._reader_policy_checked_at = None
@@ -249,13 +268,17 @@ class VirtuosoModel:
         """The reader session, after re-checking its SQL privileges when the last check is older than the interval.
 
         Privileges can change after startup (a new EXECUTE grant, a replaced routine). On drift the reader session is
-        dropped, so user queries fail until the backend restarts against a re-provisioned account. Checks are
+        dropped and revoked, so user queries fail until the runtime monitor reconnects against privileges that match the
+        stored digest again. Checks are
         serialized, and a session is only returned if it is still the published one after its check.
         """
         session = self.get_reader_session()
         if self._policy_is_fresh():
             return session
-        with VirtuosoModel._policy_lock:
+        # Bounded wait: a ping must not queue behind a slow check for longer than its own timeout.
+        if not VirtuosoModel._policy_lock.acquire(timeout=timeout_s):
+            raise ConnectionError("Timed out waiting for the read-only Virtuoso privilege check.")
+        try:
             session = self.get_reader_session()
             if self._policy_is_fresh():
                 return session
@@ -274,15 +297,18 @@ class VirtuosoModel:
                 if VirtuosoModel._reader_session is not session:
                     raise RuntimeError("The read-only Virtuoso session was dropped; user queries are not run without it.")
                 if drift != 0:
-                    session.close()
+                    _revoke(session)
                     VirtuosoModel._reader_session = None
                     VirtuosoModel._reader_policy_checked_at = None
                     raise RuntimeError(
                         f"Virtuoso account '{self.reader_user}' SQL privileges changed after startup; the read-only "
-                        "session was dropped. Review them, rerun provisioning and restart the backend."
+                        "session was dropped. Review them and rerun provisioning; the backend reconnects once the "
+                        "live privileges match the stored digest again."
                     )
                 VirtuosoModel._reader_policy_checked_at = time.monotonic()
             return session
+        finally:
+            VirtuosoModel._policy_lock.release()
 
     def _policy_is_fresh(self) -> bool:
         checked_at = VirtuosoModel._reader_policy_checked_at

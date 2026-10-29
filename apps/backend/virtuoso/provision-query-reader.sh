@@ -72,9 +72,10 @@ for graph in "$events_graph" "$audit_graph"; do
 done
 [ "$events_graph" != "$audit_graph" ] || fail "The events and audit graphs must differ."
 
-# SQL string literal: Virtuoso reads backslash escapes inside quotes, so double backslashes and quotes.
+# SQL string literal: Virtuoso reads backslash escapes inside quotes, so double backslashes and quotes. isql also
+# expands $-macros inside strings (it rewrites "a$HHMMSS" and "cost$5"), so each dollar sign is spliced in as chr(36).
 sql_string() {
-    printf "'%s'" "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e "s/'/''/g")"
+    printf "'%s'" "$(printf '%s' "$1" | sed -e 's/\\/\\\\/g' -e "s/'/''/g" -e "s/[\$]/' || chr(36) || '/g")"
 }
 
 isql_admin() {

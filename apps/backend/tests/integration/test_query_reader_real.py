@@ -541,6 +541,14 @@ class TestReaderProvisioningAndFailClosedReal(unittest.TestCase):
         self.assertTrue(self._ask("segb_quoted", password, f"ASK {{ GRAPH <{EVENTS}> {{ ?s ?p ?o }} }}"))
         self.assertFalse(self._ask("segb_quoted", password, f"ASK {{ GRAPH <{AUDIT}> {{ ?s ?p ?o }} }}"))
 
+    def test_provisioning_keeps_dollar_signs_in_passwords_intact(self) -> None:
+        # isql expands $-macros inside strings: "a$HHMMSS" and "cost$5" were rewritten and "end$" broke the statement.
+        for index, password in enumerate(("a$HHMMSS", "a$$b", "x$U{HOME}y", "p$ARGV[1]q", "cost$5", "end$")):
+            with self.subTest(password=password):
+                user = f"segb_dollar{index}"
+                self.virtuoso.provision_query_reader(user=user, password=password)
+                self.assertTrue(self._ask(user, password, f"ASK {{ GRAPH <{EVENTS}> {{ ?s ?p ?o }} }}"))
+
     def test_provisioning_refuses_privileged_or_malformed_account_names(self) -> None:
         for user in ("dba", "DBA", "nobody", "SPARQL", "bad name", "x'; drop", ""):
             with self.subTest(user=user):

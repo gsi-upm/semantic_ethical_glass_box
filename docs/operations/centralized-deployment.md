@@ -141,8 +141,11 @@ routine that writes a table lets the reader's SPARQL query run it. So the effect
 - The backend asks `DB.DBA.SEGB_QUERY_READER_SQL_POLICY_DRIFT` (called with the writer account, no `EXECUTE` grant to
   the reader or `PUBLIC`) whether the live listing still equals the stored digest, at startup and again before a
   user query or readiness ping once `VIRTUOSO_READER_POLICY_RECHECK_SECONDS` (default 30) have passed. A grant added
-  or a routine replaced later, a missing digest, or a failing check refuse the query; on drift the reader session is
-  dropped until the backend restarts against a re-provisioned account. The stored digest is the one reported with the
+  or a routine replaced later, a missing digest, or a failing check refuse the query. On drift the reader session is
+  dropped and revoked (a thread still holding it cannot send); the backend's connection monitor then reconnects, which
+  succeeds only once the live listing matches the stored digest again (the change was reverted, or provisioning was
+  rerun and stored a new one). Pass the interval to the container as `VIRTUOSO_READER_POLICY_RECHECK_SECONDS` in `.env`.
+  The stored digest is the one reported with the
   listing that matched the manifest, so a concurrent change cannot become the trusted baseline. The listing also
   contains `OWNS|...` lines for tables and procedures under the reader's own schema, because owner rights need no grant.
 

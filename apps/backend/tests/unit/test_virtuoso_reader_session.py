@@ -6,6 +6,8 @@ import time
 import unittest
 from unittest.mock import Mock, patch
 
+import requests
+
 from models.virtuoso_model import VirtuosoModel
 
 EMPTY_RESULT = {"head": {"vars": []}, "results": {"bindings": []}}
@@ -192,6 +194,65 @@ class TestPolicyIsRecheckedAfterStartup(_ModelState):
 
         self.assertEqual(outcome, ["RuntimeError"])
         reader.get.assert_not_called()
+
+    def test_concurrent_due_checks_run_one_policy_query(self) -> None:
+        admin, reader = self._stale()
+        entered, release = threading.Event(), threading.Event()
+
+        def slow_clean(*args, **kwargs):
+            entered.set()
+            release.wait(5)
+            return Mock(raise_for_status=Mock(), json=Mock(return_value=self._drift("0")))
+
+        admin.get.side_effect = slow_clean
+        threads = [
+            threading.Thread(target=lambda: VirtuosoModel().run_custom_query("SELECT * WHERE { ?s ?p ?o }"))
+            for _ in range(3)
+        ]
+        threads[0].start()
+        self.assertTrue(entered.wait(5))
+        for thread in threads[1:]:
+            thread.start()
+        time.sleep(0.2)  # the others are now waiting on the check, or would have issued their own
+        release.set()
+        for thread in threads:
+            thread.join(5)
+
+        self.assertEqual(admin.get.call_count, 1)
+        self.assertEqual(reader.get.call_count, 3)
+
+    def test_a_dropped_reader_session_cannot_send_even_to_a_thread_that_still_holds_it(self) -> None:
+        admin = _session()
+        admin.get.return_value.json.return_value = self._drift("1")
+        reader = requests.Session()
+        VirtuosoModel._session, VirtuosoModel._reader_session = admin, reader
+        VirtuosoModel._reader_policy_checked_at = time.monotonic() - 3600
+
+        with self.assertRaisesRegex(RuntimeError, "changed after startup"):
+            VirtuosoModel().run_custom_query("SELECT * WHERE { ?s ?p ?o }")
+
+        with self.assertRaisesRegex(RuntimeError, "revoked"):
+            reader.get("http://127.0.0.1:9/sparql")
+
+    def test_closing_the_connection_revokes_the_reader_session(self) -> None:
+        reader = requests.Session()
+        VirtuosoModel._session, VirtuosoModel._reader_session = _session(), reader
+
+        VirtuosoModel().close_connection()
+
+        with self.assertRaisesRegex(RuntimeError, "revoked"):
+            reader.get("http://127.0.0.1:9/sparql")
+
+    def test_ping_does_not_wait_longer_than_its_timeout_for_a_running_check(self) -> None:
+        admin, _ = self._stale()
+        VirtuosoModel._policy_lock.acquire()
+        try:
+            started = time.monotonic()
+            self.assertFalse(VirtuosoModel().ping(timeout_s=0.05))
+            self.assertLess(time.monotonic() - started, 1.0)
+        finally:
+            VirtuosoModel._policy_lock.release()
+        admin.get.assert_not_called()
 
 
 class TestConnectFailsClosed(_ModelState):

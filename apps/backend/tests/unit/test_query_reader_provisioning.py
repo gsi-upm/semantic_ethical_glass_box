@@ -124,6 +124,30 @@ class TestProvisioningIsqlFailures(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("line breaks", result.stderr)
 
+    def test_dollar_signs_in_passwords_never_reach_isql_as_macros(self) -> None:
+        with tempfile.TemporaryDirectory(dir=ROOT) as directory:
+            isql = Path(directory) / "isql"
+            isql.write_text(
+                '#!/bin/sh\n'
+                'case "${4-}" in "exec=select 1") exit 0 ;; esac\n'
+                'cat >> "$ISQL_TEST_STDIN"\n'
+                'echo "SEGB_QUERY_READER_PROVISIONED"\n'
+                'exit 0\n',
+                encoding="utf-8",
+            )
+            isql.chmod(0o700)
+            stdin_log = Path(directory) / "stdin.log"
+            env = {
+                **os.environ, "PATH": f"{directory}:{os.environ.get('PATH', '')}",
+                "VIRTUOSO_ADMIN_PASSWORD": "admin-pw", "VIRTUOSO_READER_PASSWORD": "a$HHMMSS$$b$",
+                "ISQL_TEST_STDIN": str(stdin_log), "VIRTUOSO_READER_POLICY_FILE": str(Path(directory) / "none"),
+            }
+            subprocess.run(["sh", str(SCRIPT)], env=env, capture_output=True, text=True, timeout=10)
+            statement = stdin_log.read_text(encoding="utf-8")
+        call = [line for line in statement.splitlines() if line.startswith("DB.DBA.SEGB_PROVISION_QUERY_READER (")][0]
+        self.assertNotIn("$", call)
+        self.assertIn("'a' || chr(36) || 'HHMMSS' || chr(36) || '' || chr(36) || 'b' || chr(36) || ''", call)
+
 
 if __name__ == "__main__":
     unittest.main()
