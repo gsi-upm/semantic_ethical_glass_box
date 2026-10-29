@@ -60,6 +60,7 @@ Then open `.env` and set at least the Virtuoso password:
 
 ```env
 VIRTUOSO_PASSWORD=change-this-password
+VIRTUOSO_READER_PASSWORD=change-this-reader-password
 ```
 
 This value is only read when the `virtuoso_data` Docker volume is created for the first time. Changing it later
@@ -68,6 +69,9 @@ does not update the password of an existing database.
 To keep this first run simple, leave `SECRET_KEY` empty so that authentication remains disabled.
 
 ## Step 2 — Start the Stack
+
+`GET /query` runs on a dedicated read-only Virtuoso account. Compose provisions it before the backend starts and
+refuses it unless its [SQL privileges match the reviewed manifest](../operations/centralized-deployment.md#query-account-isolation).
 
 Pull and start the published images from GHCR:
 

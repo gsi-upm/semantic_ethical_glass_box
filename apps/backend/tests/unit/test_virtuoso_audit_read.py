@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 import unittest
 from unittest.mock import Mock, patch
 
@@ -90,9 +91,11 @@ class TestQueryIsolation(unittest.TestCase):
         self.session.get.return_value = Mock(
             raise_for_status=Mock(), text="", json=Mock(return_value={"head": {"vars": []}, "results": {"bindings": []}})
         )
-        before = VirtuosoModel._session
-        VirtuosoModel._session = self.session
-        self.addCleanup(setattr, VirtuosoModel, "_session", before)
+        before = VirtuosoModel._reader_session
+        VirtuosoModel._reader_session = self.session
+        VirtuosoModel._reader_policy_checked_at = time.monotonic()
+        self.addCleanup(setattr, VirtuosoModel, "_reader_policy_checked_at", None)
+        self.addCleanup(setattr, VirtuosoModel, "_reader_session", before)
         env = patch.dict(
             "os.environ",
             {"VIRTUOSO_GRAPH_URI": "http://segb/events", "VIRTUOSO_AUDIT_GRAPH_URI": "http://segb/audit",

@@ -26,20 +26,48 @@ from utils.audit import (
     build_insertion_entry,
     entries_from_rows,
 )
-from utils.query_scope import QueryScopeError, check_read_query_scope
 from utils.prefix_utils import (
     clean_prefixes_with_numbers,
     extract_prefixes,
     load_prefixes,
     save_prefixes,
 )
+from utils.query_scope import QueryScopeError, check_read_query_scope
+
+
+class _RevokedAdapter(requests.adapters.BaseAdapter):
+    """Transport that refuses every request, so a session that was dropped can no longer reach Virtuoso."""
+
+    def send(self, *args, **kwargs):
+        raise RuntimeError("The read-only Virtuoso session was revoked; user queries are not run without it.")
+
+    def close(self) -> None:
+        pass
+
+
+def _revoke(session: requests.Session) -> None:
+    """Closes a session and makes any thread still holding it fail instead of querying (close() alone does not)."""
+    session.close()
+    adapter = _RevokedAdapter()
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
 
 
 class VirtuosoModel:
-    """Thread-safe singleton wrapper around Virtuoso HTTP API."""
+    """Thread-safe singleton wrapper around Virtuoso HTTP API.
+
+    It holds two sessions. The admin session (``VIRTUOSO_USER``) writes, reads the audit graph and clears the events
+    graph. The reader session (``VIRTUOSO_READER_USER``) runs the queries users send to ``GET /query``; that account
+    must be read-only and unable to read local audit triples (see ``apps/backend/virtuoso/provision-query-reader.sh``).
+    The dataset pin and scope check also protect metadata and federation. Without a verified reader session, user
+    queries fail.
+    """
 
     _instance: "VirtuosoModel | None" = None
     _session: requests.Session | None = None
+    _reader_session: requests.Session | None = None
+    _reader_policy_checked_at: float | None = None
+    _policy_lock = threading.Lock()
     _lock = threading.Lock()
 
     def __new__(cls, *args, **kwargs):
@@ -59,6 +87,9 @@ class VirtuosoModel:
         self.audit_inline_ttl_max_bytes = int(os.getenv("AUDIT_INLINE_TTL_MAX_BYTES", str(4 * 1024 * 1024)))
         self.user = os.getenv("VIRTUOSO_USER", "dba")
         self.password = os.getenv("VIRTUOSO_PASSWORD") or os.getenv("DBA_PASSWORD")
+        self.reader_user = os.getenv("VIRTUOSO_READER_USER", "")
+        self.reader_password = os.getenv("VIRTUOSO_READER_PASSWORD", "")
+        self.reader_policy_recheck_s = float(os.getenv("VIRTUOSO_READER_POLICY_RECHECK_SECONDS", "30"))
 
     @classmethod
     def get_instance(cls) -> "VirtuosoModel":
@@ -70,56 +101,233 @@ class VirtuosoModel:
             raise RuntimeError("Virtuoso session is not initialized.")
         return cls._session
 
+    @classmethod
+    def get_reader_session(cls) -> requests.Session:
+        if cls._reader_session is None:
+            raise RuntimeError("The read-only Virtuoso session is not initialized; user queries are not run without it.")
+        return cls._reader_session
+
+    def _check_reader_settings(self) -> None:
+        if not self.reader_user:
+            raise RuntimeError("VIRTUOSO_READER_USER must be set: GET /query runs on a dedicated read-only account.")
+        if not self.reader_password:
+            raise RuntimeError("VIRTUOSO_READER_PASSWORD must be set: GET /query runs on a dedicated read-only account.")
+        if self.reader_user.lower() in {"dba", self.user.lower()}:
+            raise RuntimeError(
+                f"VIRTUOSO_READER_USER must name a dedicated read-only account, not the admin account '{self.reader_user}'."
+            )
+
     def connect_to_db(self, retries: int = 10, delay: float = 5.0) -> requests.Session:
         if not self.password:
             raise RuntimeError("VIRTUOSO_PASSWORD (or DBA_PASSWORD) must be set.")
+        self._check_reader_settings()
         with VirtuosoModel._lock:
-            if VirtuosoModel._session is not None:
-                self.session = VirtuosoModel._session
-                return self.session
-
-            session = requests.Session()
-            session.auth = HTTPDigestAuth(self.user, self.password)
-            session.headers.update({"Accept": "application/sparql-results+json"})
-
-            last_error: Exception | None = None
-            for _ in range(retries):
+            if VirtuosoModel._session is None:
+                VirtuosoModel._session = self._open_session(self.user, self.password, retries, delay)
+            self.session = VirtuosoModel._session
+            if VirtuosoModel._reader_session is None:
+                reader = self._open_session(self.reader_user, self.reader_password, retries, delay)
                 try:
-                    response = session.get(
-                        self.endpoint,
-                        params={"query": "ASK { ?s ?p ?o }", "timeout": 10000},
-                        timeout=15,
-                    )
-                    if response.status_code == 200:
-                        VirtuosoModel._session = session
-                        self.session = session
-                        return session
-                    last_error = RuntimeError(f"HTTP {response.status_code}: {response.text[:120]}")
-                except requests.RequestException as error:  # pragma: no cover - depends on external DB
-                    last_error = error
-                time.sleep(delay)
+                    self._check_read_only(reader)
+                except BaseException:
+                    reader.close()
+                    raise
+                VirtuosoModel._reader_session = reader
+                VirtuosoModel._reader_policy_checked_at = time.monotonic()
+            return self.session
 
-        raise ConnectionError(f"Could not connect to Virtuoso endpoint '{self.endpoint}'.") from last_error
+    def _open_session(self, user: str, password: str, retries: int, delay: float) -> requests.Session:
+        session = requests.Session()
+        session.auth = HTTPDigestAuth(user, password)
+        session.headers.update({"Accept": "application/sparql-results+json"})
+
+        last_error: Exception | None = None
+        for _ in range(retries):
+            try:
+                response = session.get(
+                    self.endpoint,
+                    params={"query": "ASK { ?s ?p ?o }", "timeout": 10000},
+                    timeout=15,
+                )
+                if response.status_code == 200:
+                    return session
+                last_error = RuntimeError(f"HTTP {response.status_code}: {response.text[:120]}")
+            except requests.RequestException as error:  # pragma: no cover - depends on external DB
+                last_error = error
+            time.sleep(delay)
+
+        session.close()
+        raise ConnectionError(f"Could not connect to Virtuoso endpoint '{self.endpoint}' as '{user}'.") from last_error
+
+    def _check_read_only(self, session: requests.Session) -> None:
+        """Refuses a reader account that can modify a graph or see the audit graph.
+
+        The write probe clears a fresh, random graph, so it changes nothing even when it is wrongly allowed.
+        Check permissions as well as data: an empty audit graph must not hide a misconfigured grant.
+        """
+        probe = session.post(
+            self.endpoint,
+            data=f"CLEAR SILENT GRAPH <urn:uuid:{uuid.uuid4()}>".encode("utf-8"),
+            headers={"Content-Type": "application/sparql-update"},
+            timeout=15,
+        )
+        if probe.ok:
+            raise RuntimeError(
+                f"Virtuoso account '{self.reader_user}' can modify graphs; GET /query needs a read-only account."
+            )
+        # Virtuoso reports a refused update as HTTP 500 with SR186 (no update role) or SR619 (no write permission).
+        if probe.status_code not in (401, 403) and not any(code in probe.text for code in ("SR186", "SR619")):
+            raise ConnectionError(f"Could not verify that '{self.reader_user}' is read-only: HTTP {probe.status_code}.")
+
+        # Source: https://docs.openlinksw.com/virtuoso/fn_rdf_graph_user_perms_get/
+        # Only this fixed administrative check uses the writer account. Serialize values as SPARQL literals;
+        # no user-supplied query is ever sent through this session.
+        audit_graph, events_graph, reader_user = (
+            Literal(value).n3() for value in (self.audit_graph_uri, self.graph_uri, self.reader_user)
+        )
+        permissions = self.get_session().get(
+            self.endpoint,
+            params={
+                "query": (
+                    f"SELECT (sql:RDF_GRAPH_USER_PERMS_GET({audit_graph}, {reader_user}) AS ?audit) "
+                    f"(sql:RDF_GRAPH_USER_PERMS_GET({events_graph}, {reader_user}) AS ?events) "
+                    f'(bif:user_has_role({reader_user}, "SPARQL_UPDATE") AS ?update_role) '
+                    f'(bif:user_has_role({reader_user}, "SPARQL_SPONGE") AS ?sponge_role) '
+                    f'(bif:user_has_role({reader_user}, "dba") AS ?dba_role) '
+                    f'(sql:SEGB_QUERY_READER_SQL_POLICY_DRIFT({reader_user}) AS ?sql_policy) WHERE {{}}'
+                )
+            },
+            headers={"Accept": "application/sparql-results+json"},
+            timeout=15,
+        )
+        permissions.raise_for_status()
+        try:
+            row = permissions.json()["results"]["bindings"][0]
+            audit_perms, events_perms = int(row["audit"]["value"]), int(row["events"]["value"])
+        except (KeyError, IndexError, TypeError, ValueError) as error:
+            raise ConnectionError("Could not verify the read-only Virtuoso graph permissions.") from error
+        if audit_perms != 0:
+            raise RuntimeError(f"Virtuoso account '{self.reader_user}' has access to the audit graph.")
+        if events_perms != 1:
+            raise RuntimeError(f"Virtuoso account '{self.reader_user}' needs read-only access to the events graph.")
+        # A denied write on the random graph alone is insufficient: an inherited update role could still allow
+        # writes on another graph with an explicit grant. user_has_role includes inherited role membership.
+        # Source: https://github.com/openlink/virtuoso-opensource/blob/develop/7/libsrc/Wi/sparql.sql
+        try:
+            has_write_role = any(int(row[name]["value"]) != 0 for name in ("update_role", "sponge_role", "dba_role"))
+        except (KeyError, TypeError, ValueError) as error:
+            raise ConnectionError("Could not verify the read-only Virtuoso roles.") from error
+        if has_write_role:
+            raise RuntimeError(f"Virtuoso account '{self.reader_user}' can modify graphs through an inherited role.")
+
+        # Graph ACLs and the denied write probe cannot detect SQL access or definer-rights procedures. Provisioning
+        # stores a digest of the reader's effective SQL privileges (own, inherited, PUBLIC, nobody, with routine
+        # body hashes) after matching them to the reviewed manifest; any later change makes the live digest differ.
+        # A missing or failing check must also prevent startup.
+        try:
+            sql_policy = int(row["sql_policy"]["value"])
+        except (KeyError, TypeError, ValueError) as error:
+            raise ConnectionError(
+                "Could not verify the read-only Virtuoso SQL privileges; rerun the reader provisioning."
+            ) from error
+        if sql_policy != 0:
+            raise RuntimeError(
+                f"Virtuoso account '{self.reader_user}' has SQL privileges that differ from the reviewed policy "
+                "(direct grants, new inherited grants or a changed routine body); review them and rerun provisioning."
+            )
+
+        response = session.get(
+            self.endpoint,
+            params={"query": f"ASK {{ GRAPH <{self.audit_graph_uri}> {{ ?s ?p ?o }} }}"},
+            headers={"Accept": "application/sparql-results+json"},
+            timeout=15,
+        )
+        response.raise_for_status()
+        if response.json().get("boolean") is not False:
+            raise RuntimeError(
+                f"Virtuoso account '{self.reader_user}' can read the audit graph; GET /query needs a read-only account."
+            )
 
     def close_connection(self) -> None:
         with VirtuosoModel._lock:
             if VirtuosoModel._session:
                 VirtuosoModel._session.close()
+            if VirtuosoModel._reader_session:
+                _revoke(VirtuosoModel._reader_session)
             VirtuosoModel._session = None
+            VirtuosoModel._reader_session = None
+            VirtuosoModel._reader_policy_checked_at = None
             self.session = None
 
-    def ping(self, timeout_s: float = 1.0) -> bool:
+    def _drift_query(self) -> str:
+        return (
+            f"SELECT (sql:SEGB_QUERY_READER_SQL_POLICY_DRIFT({Literal(self.reader_user).n3()}) AS ?sql_policy) WHERE {{}}"
+        )
+
+    def _verified_reader_session(self, timeout_s: float = 15.0) -> requests.Session:
+        """The reader session, after re-checking its SQL privileges when the last check is older than the interval.
+
+        Privileges can change after startup (a new EXECUTE grant, a replaced routine). On drift the reader session is
+        dropped and revoked, so user queries fail until the runtime monitor reconnects against privileges that match the
+        stored digest again. Checks are
+        serialized, and a session is only returned if it is still the published one after its check.
+        """
+        session = self.get_reader_session()
+        if self._policy_is_fresh():
+            return session
+        # Bounded wait: a ping must not queue behind a slow check for longer than its own timeout.
+        if not VirtuosoModel._policy_lock.acquire(timeout=timeout_s):
+            raise ConnectionError("Timed out waiting for the read-only Virtuoso privilege check.")
         try:
-            response = self.get_session().get(
-                self.endpoint,
-                params={"query": "ASK {}", "format": "application/sparql-results+json"},
-                headers={"Accept": "application/sparql-results+json"},
-                timeout=timeout_s,
-            )
-            if response.status_code != 200:
-                return False
-            return bool(response.json().get("boolean") is True)
-        except (requests.RequestException, RuntimeError, ValueError):
+            session = self.get_reader_session()
+            if self._policy_is_fresh():
+                return session
+            try:
+                response = self.get_session().get(
+                    self.endpoint,
+                    params={"query": self._drift_query()},
+                    headers={"Accept": "application/sparql-results+json"},
+                    timeout=timeout_s,
+                )
+                response.raise_for_status()
+                drift = int(response.json()["results"]["bindings"][0]["sql_policy"]["value"])
+            except (requests.RequestException, KeyError, IndexError, TypeError, ValueError) as error:
+                raise ConnectionError("Could not re-verify the read-only Virtuoso SQL privileges.") from error
+            with VirtuosoModel._lock:
+                if VirtuosoModel._reader_session is not session:
+                    raise RuntimeError("The read-only Virtuoso session was dropped; user queries are not run without it.")
+                if drift != 0:
+                    _revoke(session)
+                    VirtuosoModel._reader_session = None
+                    VirtuosoModel._reader_policy_checked_at = None
+                    raise RuntimeError(
+                        f"Virtuoso account '{self.reader_user}' SQL privileges changed after startup; the read-only "
+                        "session was dropped. Review them and rerun provisioning; the backend reconnects once the "
+                        "live privileges match the stored digest again."
+                    )
+                VirtuosoModel._reader_policy_checked_at = time.monotonic()
+            return session
+        finally:
+            VirtuosoModel._policy_lock.release()
+
+    def _policy_is_fresh(self) -> bool:
+        checked_at = VirtuosoModel._reader_policy_checked_at
+        return checked_at is not None and time.monotonic() - checked_at < self.reader_policy_recheck_s
+
+    def ping(self, timeout_s: float = 1.0) -> bool:
+        """True only when both the admin and the reader sessions answer."""
+        try:
+            for session in (self.get_session(), self._verified_reader_session(timeout_s)):
+                response = session.get(
+                    self.endpoint,
+                    params={"query": "ASK {}", "format": "application/sparql-results+json"},
+                    headers={"Accept": "application/sparql-results+json"},
+                    timeout=timeout_s,
+                )
+                if response.status_code != 200 or response.json().get("boolean") is not True:
+                    return False
+            return True
+        except (requests.RequestException, RuntimeError, ValueError, ConnectionError):
             return False
 
     def insert_ttl(self, ttl_content: str, *, audit: AuditContext) -> str:
@@ -396,7 +604,9 @@ class VirtuosoModel:
         is_construct = kind == "construct"
         accept_header = "text/turtle" if is_construct else "application/sparql-results+json"
 
-        response = self.get_session().get(
+        # The reader's ACLs constrain local triple reads and writes. The dataset pin also hides graph-name
+        # metadata, and the scope check is still required to reject remote SERVICE identities.
+        response = self._verified_reader_session().get(
             self.endpoint,
             params={
                 "query": query,

@@ -59,11 +59,15 @@ For a first run, set only:
 
 ```env
 VIRTUOSO_PASSWORD=change-this-password
+VIRTUOSO_READER_PASSWORD=change-this-reader-password
 ```
 
 Leave `SECRET_KEY` empty so authentication stays disabled during the demo.
 
 ### 3. Start the stack
+
+`GET /query` runs on a dedicated read-only Virtuoso account. Compose provisions it before the backend starts and
+refuses it unless its [SQL privileges match the reviewed manifest](docs/operations/centralized-deployment.md#query-account-isolation).
 
 ```bash
 docker compose -f docker-compose.yaml pull

@@ -11,19 +11,46 @@ services:
     networks:
       - internal_network
     depends_on:
-      - segb-virtuoso
+      segb-query-reader-init:
+        condition: service_completed_successfully
     environment:
       - LOGGING_LEVEL=DEBUG
       - VERSION=${VERSION:-stable}
       - SECRET_KEY=${SECRET_KEY:-}
       - VIRTUOSO_ENDPOINT=${VIRTUOSO_ENDPOINT:-http://segb-virtuoso:8890/sparql-auth}
       - VIRTUOSO_GRAPH_URI=${VIRTUOSO_GRAPH_URI:-http://segb/events}
+      - VIRTUOSO_AUDIT_GRAPH_URI=${VIRTUOSO_AUDIT_GRAPH_URI:-http://segb/audit}
       - VIRTUOSO_USER=${VIRTUOSO_USER:-dba}
       - VIRTUOSO_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
+      - VIRTUOSO_READER_USER=${VIRTUOSO_READER_USER:-segb_reader}
+      - VIRTUOSO_READER_PASSWORD=${VIRTUOSO_READER_PASSWORD:?VIRTUOSO_READER_PASSWORD_required}
+      - VIRTUOSO_READER_POLICY_RECHECK_SECONDS=${VIRTUOSO_READER_POLICY_RECHECK_SECONDS:-30}
     volumes:
       - ./logs:/logs
       - audit_dumps:/data/audit-dumps
     restart: always
+
+  # Provision using isql from the pinned Virtuoso image; failure prevents backend startup.
+  segb-query-reader-init:
+    image: openlink/virtuoso-opensource-7:7.2.16
+    entrypoint: ["/bin/sh", "/provision-query-reader.sh"]
+    depends_on:
+      - segb-virtuoso
+    environment:
+      - VIRTUOSO_ISQL_ADDRESS=${VIRTUOSO_ISQL_ADDRESS:-segb-virtuoso:1111}
+      - VIRTUOSO_ADMIN_USER=${VIRTUOSO_USER:-dba}
+      - VIRTUOSO_ADMIN_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
+      - VIRTUOSO_READER_USER=${VIRTUOSO_READER_USER:-segb_reader}
+      - VIRTUOSO_READER_PASSWORD=${VIRTUOSO_READER_PASSWORD:?VIRTUOSO_READER_PASSWORD_required}
+      - VIRTUOSO_GRAPH_URI=${VIRTUOSO_GRAPH_URI:-http://segb/events}
+      - VIRTUOSO_AUDIT_GRAPH_URI=${VIRTUOSO_AUDIT_GRAPH_URI:-http://segb/audit}
+      - VIRTUOSO_READER_POLICY_FILE=/reader-sql-policy.manifest
+    volumes:
+      - ./apps/backend/virtuoso/provision-query-reader.sh:/provision-query-reader.sh:ro
+      - ./apps/backend/virtuoso/reader-sql-policy.manifest:/reader-sql-policy.manifest:ro
+    networks:
+      - internal_network
+    restart: "no"
 
   # ─────────────────────────────
   # Virtuoso Triple Store

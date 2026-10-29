@@ -140,6 +140,71 @@ class HarnessEnvironmentTests(unittest.TestCase):
             _instance(FakeDocker()).environ()
 
 
+class HarnessProvisioningTests(unittest.TestCase):
+    def test_provisioning_runs_the_repository_script_inside_its_own_container(self) -> None:
+        docker = FakeDocker()
+        inst = _instance(docker)
+        inst.start()
+
+        reader = inst.provision_query_reader(user="segb_reader", password="reader-pw")
+
+        copy, manifest = docker.commands("cp")
+        self.assertEqual(copy[1], str(harness.PROVISION_SCRIPT))
+        self.assertTrue(harness.PROVISION_SCRIPT.is_file())
+        self.assertEqual(copy[2], f"{inst.container_name}:{harness.PROVISION_TARGET}")
+        self.assertEqual(manifest[1], str(harness.POLICY_MANIFEST))
+        self.assertTrue(harness.POLICY_MANIFEST.is_file())
+        (run,) = docker.commands("exec")
+        self.assertEqual(run[-3:], [inst.container_name, "sh", harness.PROVISION_TARGET])
+        self.assertIn(f"VIRTUOSO_ADMIN_PASSWORD={inst.password}", run)
+        self.assertIn("VIRTUOSO_READER_PASSWORD=reader-pw", run)
+        self.assertEqual(reader, {"VIRTUOSO_READER_USER": "segb_reader", "VIRTUOSO_READER_PASSWORD": "reader-pw"})
+
+    def test_provisioning_generates_a_reader_password_by_default(self) -> None:
+        inst = _instance(FakeDocker())
+        inst.start()
+        password = inst.provision_query_reader()["VIRTUOSO_READER_PASSWORD"]
+        self.assertTrue(password)
+        self.assertNotEqual(password, inst.password)
+
+    def test_provisioning_and_sql_before_start_fail_loudly(self) -> None:
+        inst = _instance(FakeDocker())
+        with self.assertRaises(RuntimeError):
+            inst.provision_query_reader()
+        with self.assertRaises(RuntimeError):
+            inst.sql("select 1")
+
+    def test_sql_raises_when_isql_reports_an_error(self) -> None:
+        docker = FakeDocker()
+
+        def erroring(args: list[str]) -> subprocess.CompletedProcess:
+            result = docker(args)
+            if args[:1] == ["exec"]:
+                result.stdout = "Connected\n*** Error 42001: Undefined procedure\nat line 0\n"
+            return result
+
+        inst = harness.VirtuosoTestInstance(docker=erroring, wait_ready=lambda e: None)
+        inst.start()
+        with self.assertRaisesRegex(RuntimeError, "Undefined procedure"):
+            inst.sql("select nosuchfn(1)")
+
+    def test_sql_refuses_isql_errors_on_either_stream(self) -> None:
+        for stream in ("stdout", "stderr"):
+            with self.subTest(stream=stream):
+                docker = FakeDocker()
+
+                def erroring(args: list[str]) -> subprocess.CompletedProcess:
+                    result = docker(args)
+                    if args[:1] == ["exec"]:
+                        setattr(result, stream, "SQL> *** Error SEGB5: refused\n")
+                    return result
+
+                inst = harness.VirtuosoTestInstance(docker=erroring, wait_ready=lambda e: None)
+                inst.start()
+                with self.assertRaisesRegex(RuntimeError, "SEGB5"):
+                    inst.sql("select 1")
+
+
 class OptInTests(unittest.TestCase):
     def test_disabled_by_default(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
