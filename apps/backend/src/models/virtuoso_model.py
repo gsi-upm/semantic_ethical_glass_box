@@ -26,6 +26,7 @@ from utils.audit import (
     build_insertion_entry,
     entries_from_rows,
 )
+from utils.query_scope import QueryScopeError, check_read_query_scope
 from utils.prefix_utils import (
     clean_prefixes_with_numbers,
     extract_prefixes,
@@ -326,6 +327,16 @@ class VirtuosoModel:
                 "message": f"Invalid SPARQL syntax: {str(error).strip() or 'Invalid syntax.'}",
             }
 
+        try:
+            check_read_query_scope(query, self.graph_uri)
+        except QueryScopeError as error:
+            return {
+                "valid": False,
+                "query_kind": kind,
+                "allows_update_execution": allow_updates,
+                "message": str(error),
+            }
+
         return {
             "valid": True,
             "query_kind": kind,
@@ -366,7 +377,14 @@ class VirtuosoModel:
 
         response = self.get_session().get(
             self.endpoint,
-            params={"query": query, "format": accept_header},
+            params={
+                "query": query,
+                "format": accept_header,
+                # Pin the dataset to the events graph. Without it Virtuoso queries the union of all graphs,
+                # audit included; named-graph-uri also confines GRAPH ?g.
+                "default-graph-uri": self.graph_uri,
+                "named-graph-uri": self.graph_uri,
+            },
             headers={"Accept": accept_header},
             timeout=60,
         )

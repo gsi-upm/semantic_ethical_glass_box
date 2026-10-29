@@ -21,7 +21,7 @@ SEGB behaves differently depending on `SECRET_KEY`.
 | `POST` | `/ttl/validate` | `admin` | Validate Turtle before insertion |
 | `POST` | `/ttl` | `logger` or `admin` | Insert Turtle into the graph |
 | `GET` | `/events` | `auditor` or `admin` | Export the current graph as Turtle |
-| `GET` | `/query` | `auditor` or `admin` | Execute a read-only SPARQL query |
+| `GET` | `/query` | `auditor` or `admin` | Execute a read-only SPARQL query over the events graph; queries that reach other graphs, `SERVICE` or non-XSD functions get `422` |
 | `POST` | `/query/validate` | `auditor` or `admin` | Validate a read-only SPARQL query |
 | `POST` | `/ttl/delete_all` | `admin` | Delete graph content (the removed graph is kept in the audit trail) |
 | `GET` | `/history` | `auditor` or `admin` | List the audit entries, oldest first |
