@@ -28,6 +28,14 @@
       "orcid": "0000-0002-1755-2712"
     }
   ],
+  "contributors": [
+    {
+      "name": "Carrera, Álvaro",
+      "affiliation": "Universidad Politécnica de Madrid",
+      "orcid": "0000-0002-0319-036X",
+      "type": "ContactPerson"
+    }
+  ],
   "keywords": [
     "semantic web",
     "ethical analysis",
