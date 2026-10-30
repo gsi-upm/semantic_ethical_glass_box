@@ -19,7 +19,7 @@ import uuid
 from collections.abc import Callable
 from pathlib import Path
 
-VIRTUOSO_IMAGE = "openlink/virtuoso-opensource-7:7.2.16"
+VIRTUOSO_IMAGE = "openlink/virtuoso-opensource-7:7.2.16@sha256:e7a5cd1915569d70d8363503dc62f6bf818b485f1501b230c7608cde8528c72d"
 CONTAINER_PORT = 8890
 NAME_PREFIX = "segb-it-"
 LABEL_KEY = "segb.integration-test"

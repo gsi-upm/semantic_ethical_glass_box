@@ -53,7 +53,7 @@ services:
 
   # Provision using isql from the pinned Virtuoso image; failure prevents backend startup.
   segb-query-reader-init:
-    image: openlink/virtuoso-opensource-7:7.2.16
+    image: openlink/virtuoso-opensource-7:7.2.16@sha256:e7a5cd1915569d70d8363503dc62f6bf818b485f1501b230c7608cde8528c72d
     entrypoint: ["/bin/sh", "/provision-query-reader.sh"]
     depends_on:
       - segb-virtuoso
@@ -75,7 +75,7 @@ services:
 
   # Virtuoso triple store
   segb-virtuoso:
-    image: openlink/virtuoso-opensource-7:7.2.16
+    image: openlink/virtuoso-opensource-7:7.2.16@sha256:e7a5cd1915569d70d8363503dc62f6bf818b485f1501b230c7608cde8528c72d
     ports:
       - "8890:8890"
       - "1111:1111"
