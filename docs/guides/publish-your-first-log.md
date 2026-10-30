@@ -9,7 +9,7 @@ through the API and the UI.
 You need:
 
 - a running SEGB backend at `http://localhost:5000` (see [Quickstart](../getting-started/quickstart.md))
-- Python `3.10+`
+- Python `3.11+`
 - if auth is enabled, a JWT with role `logger` or `admin`
 
 

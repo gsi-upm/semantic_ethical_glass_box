@@ -3,7 +3,7 @@ name = "segb"
 version = "1.2.0"
 description = "Semantic Ethical Glass Box (SEGB) for AMOR project"
 readme = "README.md"
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "fastapi[standard]==0.162.0",
     "exceptiongroup>=1.2.2; python_version < '3.11'",
@@ -17,7 +17,7 @@ dependencies = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 exclude = [".venv"]
 
 [tool.ruff.lint]
@@ -25,7 +25,7 @@ select = ["E", "F", "W", "I", "B", "UP", "C4", "SIM"]
 ignore = ["B008"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_unused_configs = true
 check_untyped_defs = true
 disallow_incomplete_defs = true
