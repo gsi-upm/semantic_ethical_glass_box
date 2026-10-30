@@ -26,7 +26,7 @@ You need:
 
 - Docker Engine `24.0+`
 - Docker Compose plugin `v2.20+`
-- free host ports `5000`, `8080`, `8890`, and `1111`
+- free host ports `5000`, `8080`, and `8890`
 - to run commands from the repository root
 
 Version check:
@@ -83,6 +83,17 @@ This job uses the pinned Virtuoso image's `isql` and
 [`provision-query-reader.sh`](../../apps/backend/virtuoso/provision-query-reader.sh) to create the reader or rotate its
 password. The backend starts only if provisioning succeeds. Keep the script alongside the Compose file when deploying.
 For an existing volume, use the database's current DBA password; provisioning does not reset it or remove data.
+
+The Virtuoso SQL port `1111` is available to services on the Compose network but is not published on the host.
+For administrative SQL access, open a shell inside the running container and use its `isql` client with the current
+DBA credentials:
+
+```bash
+docker compose -f docker-compose.yaml exec segb-virtuoso sh
+```
+
+Use `docker-compose.dev.yml` instead for the development deployment. Keep the reader credentials inside the backend;
+native SQL does not enforce the reader's graph isolation, even on the internal network.
 
 Optional secure mode:
 
@@ -263,8 +274,8 @@ sh apps/backend/virtuoso/provision-query-reader.sh
 
 With Compose and an external Virtuoso, set `VIRTUOSO_ENDPOINT` and `VIRTUOSO_ISQL_ADDRESS` (its SQL port) in `.env`:
 `segb-query-reader-init` then provisions that server and never the bundled `segb-virtuoso`. Compose still makes the init
-job and the backend depend on the bundled container, so `docker compose up` creates it (and publishes ports 1111 and
-8890, which can clash with a local server). To avoid that, use an override file that removes it (the snippet needs Compose 2.24.4 or later) and pass it as a second
+job and the backend depend on the bundled container, so `docker compose up` creates it (and publishes port 8890,
+which can clash with a local server). To avoid that, use an override file that removes it (the snippet needs Compose 2.24.4 or later) and pass it as a second
 `-f` to every Compose command, including the rotation commands below, because an explicit `-f docker-compose.yaml`
 does not load `docker-compose.override.yml` by itself:
 
@@ -392,7 +403,7 @@ reverse-proxy targets).
 
 - backend not ready: check `docker compose -f docker-compose.yaml logs -f segb`
 - Virtuoso not reachable: check `docker compose -f docker-compose.yaml logs -f segb-virtuoso`
-- Port conflicts: run `lsof -i :5000 -i :8080 -i :8890 -i :1111`
+- Port conflicts: run `lsof -i :5000 -i :8080 -i :8890`
 - Auth errors: read [Authentication and JWT](authentication-and-jwt.md)
 
 ## Related Pages
