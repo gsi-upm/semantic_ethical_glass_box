@@ -20,6 +20,7 @@ removed by hand in 2.0, once nothing uses them.
   Turtle; `403` without the `logger` or `admin` role; `401` for a missing or invalid token.
 - The upload is stored exactly as with `POST /ttl` and writes one audit entry whose route is `POST /log`.
   `POST /ttl` entries have the route `POST /ttl`.
+- Send small logs for individual events; the same [insertion limits](api-and-roles.md#insert-turtle) apply.
 - Unlike `POST /ttl`, it waits for a running transaction instead of answering `429`, so a burst of logs from several
   robots is queued rather than rejected.
 

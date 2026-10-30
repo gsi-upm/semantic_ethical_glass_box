@@ -11,6 +11,9 @@ point to the robot that performed it, and a model output can point to the model 
 as TTL, is the text format SEGB uses when those logs move from the robot side to the backend. Once inserted, the triples are put together to conform
 a global Knowledge Graph (KG) stored by Virtuoso.
 
+Send small logs for individual events as they occur, rather than collecting a whole session into one upload. See the
+[Turtle insertion limits](../reference/api-and-roles.md#insert-turtle) for the current Virtuoso constraint.
+
 In normal package usage, you do not need to think in raw ontology terms all the time. `semantic_log_generator` exposes
 Python methods and enums such as `ActivityKind` which mostly abstract from ontology-specific concepts. 
 

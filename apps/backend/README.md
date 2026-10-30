@@ -42,6 +42,9 @@ This service exposes the centralized SEGB API and persists triples in Virtuoso.
 | `POST` | `/shared-context/review/{case_id}/reject` | `admin` | Reject one pending shared-context merge |
 | `GET` | `/shared-context/stats` | `auditor`, `admin` | Resolver stats |
 
+Send individual events as small Turtle logs. Very large uploads are not supported; the same limitation applies to
+the legacy `POST /log` route. See [Turtle insertion limits](../../docs/reference/api-and-roles.md#insert-turtle).
+
 Security behavior:
 
 - If `SECRET_KEY` is not set, backend runs in local no-auth mode.
