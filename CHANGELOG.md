@@ -46,6 +46,9 @@ open Dependabot alerts are cleared. The backend image moves to Python 3.12. Tags
   to `segb_reader`). The new `segb-query-reader-init` service provisions the account before the backend starts. Setting
   up an external Virtuoso is described in `docs/operations/centralized-deployment.md`.
 - If something outside Compose connected to the host port 1111, publish it explicitly or run `isql` from the container.
+- Set `VERSION=1.3.0` in your environment file (or remove the line). Compose passes `VERSION` to the backend explicitly,
+  so a file copied from the 1.2.0 example keeps announcing `1.2.0` in `/health` and OpenAPI even when the 1.3.0 image
+  runs.
 - The backend now requires Python 3.11+ when run from source.
 
 ### Known limitations
