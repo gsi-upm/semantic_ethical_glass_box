@@ -28,6 +28,8 @@ resolution.
 ## Basic Example
 
 This is the smallest end-to-end script that still produces a meaningful semantic trace and publishes it to the backend.
+For ongoing integrations, publish small logs for individual events instead of accumulating a whole session in one
+graph upload. See [Turtle insertion limits](../reference/api-and-roles.md#insert-turtle).
 
 Scenario: a user called Maria says "Hello robot". We want to keep three facts connected:
 

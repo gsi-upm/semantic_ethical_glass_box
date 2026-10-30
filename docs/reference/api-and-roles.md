@@ -80,6 +80,18 @@ may be uploaded more than once, for example for each log entry or measurement.
 
 `POST /ttl`
 
+Send individual events as separate logs rather than accumulating a whole session in one upload. Uploads of around
+5,000 triples or more are not supported: the pinned Virtuoso version can exhaust its SPARQL compiler memory when
+inserting a large log and its audit entry together. This is an approximate threshold, not a guaranteed safe maximum;
+the audit entry and the shape of the data also affect the limit. Smaller uploads can fail, and the API does not
+currently enforce a fixed triple-count limit or return a specific error for oversized logs.
+
+In an isolated test of the pinned Virtuoso 7.2.16 image, a single direct `INSERT DATA` with 4,900 synthetic triples
+succeeded, while 5,000, 10,000, and 20,000 failed with `SP030` at the same point. Raising Virtuoso's
+`MaxMemPoolSize` at runtime to 1,000,000,000 bytes did not change those results. The test did not include the API's
+audit triples, so 4,900 is not a supported maximum for an API upload. The test does not establish the exact internal
+limit or prove that memory settings can never affect other data or Virtuoso versions.
+
 ```json
 {
   "ttl_content": "...",

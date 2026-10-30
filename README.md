@@ -12,6 +12,9 @@ how the full trace fits together. This repository contains the full stack in one
 In practice, a robot or simulator builds semantic logs, the backend receives them and manages the graph behind the
 scenes, and the UI turns that data into reports, graph views, queries, and audit workflows.
 
+Send small logs for individual events instead of uploading a whole session as one log. Large Turtle uploads can exceed
+Virtuoso's SPARQL compiler limits; see [Turtle insertion limits](docs/reference/api-and-roles.md#insert-turtle).
+
 ## Demo video
 <p align="center">
   <a href="https://youtu.be/75dqJFtUymc">

@@ -194,6 +194,8 @@ statement.
 
 ## Limitations
 
+- Very large event uploads can exceed Virtuoso's compiler limits when events and their audit entry are inserted
+  together. Send small logs for individual events; see [Turtle insertion limits](api-and-roles.md#insert-turtle).
 - `audit:originIP` is as trustworthy as the proxy in front of the backend: `X-Forwarded-For` is client-controlled
   unless a trusted proxy overwrites it.
 - Blank-node subjects have no stable IRI, so they are not in `audit:mentionsSubject`. The original Turtle in

@@ -121,8 +121,9 @@ be an empty system.
 ## What Happened Behind The Scenes
 
 The script created RDF resources with `SemanticSEGBLogger`, serialized them to Turtle, sent that Turtle to `POST /ttl`,
-and stored the triples in the Knowledge Graph. That is the same pattern you will use in a larger robot integration. The
-only difference is the amount of data and the events you choose to log.
+and stored the triples in the Knowledge Graph. In a larger robot integration, send events as individual logs instead of
+collecting an entire session into one upload. Very large uploads are not supported; see the
+[insertion limits](../reference/api-and-roles.md#insert-turtle).
 
 ## Common Problems
 

@@ -80,7 +80,7 @@ Important details:
 
 Use distinct passwords for the writer and reader. Both Compose files run `segb-query-reader-init` before the backend.
 This job uses the pinned Virtuoso image's `isql` and
-[`provision-query-reader.sh`](../../apps/backend/virtuoso/provision-query-reader.sh) to create the reader or rotate its
+[`provision-query-reader.sh`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/apps/backend/virtuoso/provision-query-reader.sh) to create the reader or rotate its
 password. The backend starts only if provisioning succeeds. Keep the script alongside the Compose file when deploying.
 For an existing volume, use the database's current DBA password; provisioning does not reset it or remove data.
 
@@ -142,7 +142,7 @@ SQL grants from `SPARQL_SELECT`, its nested roles, and `PUBLIC`. These are Virtu
 and views. A real-database regression shows that any further `EXECUTE` grant to `PUBLIC` or `SPARQL_SELECT` on a
 routine that writes a table lets the reader's SPARQL query run it. So the effective set is checked, not assumed:
 
-- [`reader-sql-policy.manifest`](../../apps/backend/virtuoso/reader-sql-policy.manifest) lists every SQL grant the
+- [`reader-sql-policy.manifest`](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/apps/backend/virtuoso/reader-sql-policy.manifest) lists every SQL grant the
   reader may hold (its own, inherited from roles, `PUBLIC`, and `nobody`), the role names, and an MD5 of each granted
   routine's stored body. It was generated on a fresh pinned image and reviewed; it is the only trusted input.
 - Provisioning refuses an existing account with direct grants, then requires the listing Virtuoso computes to equal
@@ -196,7 +196,7 @@ diff -u /tmp/segb-reader-policy.current /tmp/segb-reader-policy.candidate
 Review every added, removed, or changed grant, role and routine body hash before accepting the new image. After review,
 replace the manifest's policy lines with the candidate, retain its explanatory comments, and update its image and
 Virtuoso version header. Commit the image pins and reviewed manifest together. Run the real-Virtuoso reader suite
-documented in [tests/README.md](../../tests/README.md#integration-tests-against-a-real-virtuoso-opt-in) whenever the
+documented in [tests/README.md](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/tests/README.md#integration-tests-against-a-real-virtuoso-opt-in) whenever the
 digest changes, including when the policy diff is empty. Never generate the policy from a deployment database.
 
 Accepted residual risks, observed on the pinned image with the reader's own identity: the approved routines include
@@ -298,7 +298,7 @@ docker compose -f docker-compose.yaml -f docker-compose.external-virtuoso.yml up
 
 Configure the API's `VIRTUOSO_ENDPOINT` to the corresponding authenticated `/sparql-auth` endpoint and set both writer
 and reader credentials. A failed provisioning command is a deployment failure; do not substitute writer credentials
-for reader credentials. The isolated real-database verification command is documented in [Tests](../../tests/README.md).
+for reader credentials. The isolated real-database verification command is documented in [Tests](https://github.com/gsi-upm/semantic_ethical_glass_box/blob/main/tests/README.md).
 
 ## Step 4: Check Health
 
