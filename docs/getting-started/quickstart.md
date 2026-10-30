@@ -36,7 +36,7 @@ Once loaded, you can inspect three concrete artifacts:
 Ensure the following are available on your machine:
 
 - Docker Engine and Docker Compose v2
-- Free host ports `5000`, `8080`, `8890`, and `1111`
+- Free host ports `5000`, `8080`, and `8890`
 - Python `3.10+`
 
 If you do not yet have a local checkout, clone the repository and enter it:

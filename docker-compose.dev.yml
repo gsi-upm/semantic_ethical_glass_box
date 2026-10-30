@@ -78,7 +78,6 @@ services:
     image: openlink/virtuoso-opensource-7:7.2.16@sha256:e7a5cd1915569d70d8363503dc62f6bf818b485f1501b230c7608cde8528c72d
     ports:
       - "8890:8890"
-      - "1111:1111"
     environment:
       - DBA_PASSWORD=${VIRTUOSO_PASSWORD:?VIRTUOSO_PASSWORD_required}
     volumes:
