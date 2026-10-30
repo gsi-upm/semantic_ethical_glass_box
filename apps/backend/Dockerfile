@@ -1,4 +1,4 @@
-FROM python:3.10-slim-bookworm
+FROM python:3.12-slim-bookworm
 COPY --from=ghcr.io/astral-sh/uv:0.6.12 /uv /uvx /bin/
 
 LABEL org.opencontainers.image.source=https://github.com/gsi-upm/semantic_ethical_glass_box
