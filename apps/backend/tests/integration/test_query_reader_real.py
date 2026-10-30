@@ -223,6 +223,32 @@ class TestFreshReaderProvisioningReal(unittest.TestCase):
             virtuoso.provision_query_reader(user="segb_fed_reader", password="pw")
             self.assertEqual(run().status_code, 500)
 
+    def test_reader_remote_execution_can_read_audit_as_another_identity(self) -> None:
+        with harness.VirtuosoTestInstance() as virtuoso:
+            reader = virtuoso.provision_query_reader(user="segb_rexec_reader", password="pw")
+            virtuoso.sql(f"SPARQL INSERT DATA {{ GRAPH <{AUDIT}> {{ <urn:it:remote-secret> <urn:p> 'secret' }} }}")
+            virtuoso.sql(f"DB.DBA.RDF_GRAPH_USER_PERMS_SET('{AUDIT}', 'SPARQL', 1)")
+            remote_query = f"SELECT ?s WHERE {{ GRAPH <{AUDIT}> {{ ?s ?p ?o }} }}"
+            remote = requests.post(
+                virtuoso.endpoint.replace("/sparql-auth", "/sparql"), data={"query": remote_query},
+                headers={"Accept": "application/sparql-results+json"}, timeout=60,
+            )
+            self.assertEqual(remote.status_code, 200, remote.text)
+            self.assertIn("urn:it:remote-secret", remote.text)
+            query = (
+                'PREFIX sql: <sql:> PREFIX bif: <bif:> SELECT '
+                '(bif:aref(bif:aref(sql:SPARQL_REXEC_TO_ARRAY('
+                f'"http://localhost:8890/sparql", "{remote_query}", '
+                '"", bif:vector(), "", 10, bif:vector()), 0), 0) AS ?x) WHERE {}'
+            )
+            response = requests.post(
+                virtuoso.endpoint, data={"query": query},
+                headers={"Accept": "application/sparql-results+json"},
+                auth=HTTPDigestAuth(reader["VIRTUOSO_READER_USER"], reader["VIRTUOSO_READER_PASSWORD"]), timeout=60,
+            )
+            self.assertEqual(response.status_code, 200, response.text)
+            self.assertIn("urn:it:remote-secret", response.text)
+
 
 @unittest.skipUnless(harness.integration_enabled(), "set SEGB_INTEGRATION=1 to run against a real Virtuoso")
 class TestNestedRoleIsolationReal(unittest.TestCase):

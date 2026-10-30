@@ -202,9 +202,11 @@ digest changes, including when the policy diff is empty. Never generate the poli
 Accepted residual risks, observed on the pinned image with the reader's own identity: the approved routines include
 `DB.DBA.RDF_OBJ_ADD`, which a reader's SPARQL call can use to add rows to `DB.DBA.RDF_OBJ` (storage growth, no graph
 change), and `SPARUL_LOAD_SERVICE_DATA`, which Virtuoso denies with `SR619` when the reader has no write permission on
-the target graph. `SPARQL_SD_PROBE` and `SPARQL_REXEC_TO_ARRAY` are approved too and were not shown to change a graph or
-to bypass the `SERVICE` denial, but `SPARQL_REXEC_TO_ARRAY` was not exercised to a conclusion; treat both as trusted
-as shipped. The lexical filter in the API rejects explicit `sql:` calls, and it should stay.
+the target graph. `SPARQL_SD_PROBE` is approved and was not shown to change a graph. The reader can call
+`SPARQL_REXEC_TO_ARRAY` directly through SPARQL to query a remote endpoint under that endpoint's identity, bypassing
+the database's `SERVICE` role restriction. A real-database regression demonstrates that it can return audit data if
+the remote endpoint allows access. The API's lexical filter rejects explicit `sql:` and `bif:` calls and must remain
+in place; the database account alone does not provide this federation boundary.
 
 **Native SQL access is not graph-isolated.** Graph permissions are applied by the SPARQL compiler. On the pinned
 image the reader can read audit rows with a plain `select ... from DB.DBA.RDF_QUAD` over `isql` or ODBC (the manifest
