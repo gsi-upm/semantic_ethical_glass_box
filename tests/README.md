@@ -34,15 +34,13 @@ SEGB_INTEGRATION=1 PYTHONPATH=apps/backend/src:packages/semantic_log_generator/s
   python -m unittest discover -s apps/backend/tests/integration -p 'test_*.py'
 ```
 
-Requires a working `docker` CLI. The image `openlink/virtuoso-opensource-7:7.2.16` is pulled on first use.
+Requires a working `docker` CLI. The image `openlink/virtuoso-opensource-7:7.2.16@sha256:e7a5cd1915569d70d8363503dc62f6bf818b485f1501b230c7608cde8528c72d` is pulled on first use.
 
 To verify query account isolation specifically, using the installed virtual environment:
 
 ```bash
 SEGB_INTEGRATION=1 PYTHONPATH=apps/backend/src:apps/backend/tests/integration \
-  .venv/bin/pytest -q --disable-warnings \
-  apps/backend/tests/integration/test_query_isolation_real.py \
-  apps/backend/tests/integration/test_query_reader_real.py
+  .venv/bin/python -m unittest discover -s apps/backend/tests/integration -p 'test_query*real.py'
 ```
 
 The reader suite runs the same provisioning script as Compose. It tests event SELECTs, audit isolation with the lexical

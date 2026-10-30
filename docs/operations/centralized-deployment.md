@@ -155,6 +155,39 @@ regenerate the manifest on a disposable database with `VIRTUOSO_PRINT_READER_POL
 listed in the manifest are trusted as shipped; built-ins without a stored body are only detected when replaced
 (the replacement gains a stored body). A DBA can still forge the stored digest, which is outside this threat model.
 
+### Updating the Virtuoso image and reader policy
+
+Both Compose files and the integration harness pin `openlink/virtuoso-opensource-7:7.2.16` to the same image digest.
+When updating it, change the digest in both Compose files, `apps/backend/tests/integration/virtuoso_harness.py`, and
+the references in `tests/README.md` and the manifest header. Generate a candidate policy from a **fresh disposable**
+database using the new harness image (from the repository root; Docker must be available):
+
+```sh
+PYTHONPATH=apps/backend/tests/integration python3 - > /tmp/segb-reader-policy.candidate <<'PY'
+import secrets
+from virtuoso_harness import PROVISION_SCRIPT, PROVISION_TARGET, VirtuosoTestInstance
+
+with VirtuosoTestInstance() as instance:
+    instance._docker(["cp", str(PROVISION_SCRIPT), f"{instance.container_name}:{PROVISION_TARGET}"])
+    result = instance._docker([
+        "exec", "-e", "VIRTUOSO_ISQL_ADDRESS=localhost:1111",
+        "-e", f"VIRTUOSO_ADMIN_PASSWORD={instance.password}",
+        "-e", f"VIRTUOSO_READER_PASSWORD={secrets.token_hex(8)}",
+        "-e", "VIRTUOSO_PRINT_READER_POLICY=1",
+        instance.container_name, "sh", PROVISION_TARGET,
+    ])
+    print(result.stdout, end="")
+PY
+grep '^[A-Za-z_]*|' apps/backend/virtuoso/reader-sql-policy.manifest > /tmp/segb-reader-policy.current
+diff -u /tmp/segb-reader-policy.current /tmp/segb-reader-policy.candidate
+```
+
+Review every added, removed, or changed grant, role and routine body hash before accepting the new image. After review,
+replace the manifest's policy lines with the candidate, retain its explanatory comments, and update its image and
+Virtuoso version header. Commit the image pins and reviewed manifest together. Run the real-Virtuoso reader suite
+documented in [tests/README.md](../../tests/README.md#integration-tests-against-a-real-virtuoso-opt-in) whenever the
+digest changes, including when the policy diff is empty. Never generate the policy from a deployment database.
+
 Accepted residual risks, observed on the pinned image with the reader's own identity: the approved routines include
 `DB.DBA.RDF_OBJ_ADD`, which a reader's SPARQL call can use to add rows to `DB.DBA.RDF_OBJ` (storage growth, no graph
 change), and `SPARUL_LOAD_SERVICE_DATA`, which Virtuoso denies with `SR619` when the reader has no write permission on
