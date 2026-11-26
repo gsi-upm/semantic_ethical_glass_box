@@ -60,7 +60,7 @@ docker exec -w /app/src segb-server /app/.venv/bin/python -m tools.generate_jwt 
 | `publica_escenario.py` | Valida y envía los ficheros de `ttl/escenario/` (`--carpeta` para otra subcarpeta de `ttl/`) | Solo con `--enviar` |
 | `consultas.sparql` | Consultas de lectura para `/query` | No |
 
-## Fuentes que usaremos
+## Fuentes
 
 - `ontology/segb.ttl` y `ontology/example.ttl` (en el repo).
 - Tutorial original, que ya no está en el árbol actual: `git show 0.3.0:docs/SEGB_tutorial.rst` (tag `0.3.0`). Es el escenario del que parte este worked example, con más pasos (modelos, emociones, noticias).

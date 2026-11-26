@@ -26,25 +26,4 @@ SELECT ?actividad ?modelo WHERE {
 }
 
 # C5. Todo lo que se sabe de decision_demo_1 (fusión de los pasos 3 y 4)
-SELECT ?propiedad ?valor WHERE {
-  <http://example.org#decision_demo_1> ?propiedad ?valor .
-} ORDER BY ?propiedad
-
-# C6. Cuántas tripletas hay en el grafo
-SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }
-
-# C7. Todo sobre la respuesta de ARI (punto de partida de M8)
-SELECT ?p ?o WHERE { <http://example.org#msg_demo_2> ?p ?o }
-
-# C8. Todo sobre una actividad: sustituye <URI_DE_LA_ACTIVIDAD> por su dirección
-SELECT ?p ?o WHERE { <URI_DE_LA_ACTIVIDAD> ?p ?o }
-
-# C9. Cuántas tripletas del escenario hay (M4: antes y después de enviar)
-SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o . FILTER(STRSTARTS(STR(?s), "http://example.org#")) }
-
-# C10. Qué hizo ari_demo y cuándo
-SELECT ?actividad ?inicio ?fin WHERE {
-  ?actividad <http://www.gsi.upm.es/ontologies/segb/ns#wasPerformedBy> <http://example.org#ari_demo> .
-  OPTIONAL { ?actividad <http://www.w3.org/ns/prov#startedAtTime> ?inicio }
-  OPTIONAL { ?actividad <http://www.w3.org/ns/prov#endedAtTime> ?fin }
-}
+SELECT ?p ?o WHERE { <http://example.org#decision_demo_1> ?p ?o }

@@ -5,7 +5,6 @@ Haz los módulos en orden. Regla: si tu salida no coincide con la esperada, anó
 
 Empieza desde la carpeta de este worked example, la que contiene `ejercicios.md` (los comandos usan rutas relativas a ella).
 
-
 ---
 
 ## Antes de empezar
@@ -32,7 +31,8 @@ ex:aviso_1 a schema:Message ;
 - **SPARQL** es el lenguaje para preguntar al grafo. Las palabras con `?` son huecos que se rellenan solos.
 
 ### Prepara el entorno
-1. Arranca SEGB desde la raíz del repo: `docker compose -f docker-compose.yaml up -d`.
+1. Arranca SEGB siguiendo los pasos 1 a 3 de `docs/getting-started/quickstart.md` (crear `.env`, arrancar el
+   stack y esperar a que esté listo). **No cargues el demo UC-02 (pasos 4 y 5):** borra el grafo.
 2. Comprueba que está listo: `curl -s localhost:5000/healthz/ready` debe dar `"ready":true`.
 3. Vuelve a la carpeta de este worked example (`cd worked-example`). En `ttl/escenario/` están los cuatro
    ficheros, de `01_personas.ttl` a `04_respuesta.ttl`.

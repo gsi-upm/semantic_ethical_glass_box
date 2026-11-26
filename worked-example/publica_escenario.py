@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Publica los TTL de un escenario en SEGB (BORRADOR).
+"""Publica los TTL de un escenario en SEGB.
 
 Por defecto es un ensayo (dry-run): valida cada fichero con POST /ttl/validate y NO envía nada.
 Para enviar de verdad hay que pasar --enviar; antes comprueba GET /healthz/ready. Cada envío deja una entrada
