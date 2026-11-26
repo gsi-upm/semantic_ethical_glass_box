@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Security
+
+- The root `uv.lock` now locks `dnspython` 2.9.2 instead of 2.9.1
+  ([GHSA-vvf4-9x63-8xvv](https://github.com/advisories/GHSA-vvf4-9x63-8xvv), excessive memory and CPU use when parsing
+  a malicious `WKS` record in zone-file format; Dependabot alert #172). It is a transitive dependency of
+  `fastapi[standard]`. A text search of `apps`, `packages` and `examples` found no direct use of it. Already published
+  images are unchanged.
+
 ### Fixed
 
 - `GET /query` and `POST /query/validate` no longer reject a valid SPARQL query when the `PREFIX`/`BASE` declarations
