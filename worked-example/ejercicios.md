@@ -1,9 +1,62 @@
 # Ejercicios: modelado, logs y auditoría en SEGB
 
 Cada módulo tiene: **qué hacer**, **qué debe salir** y **qué explicar con tus palabras**.
-Regla: si tu salida no coincide con la esperada, anótalo. Es un dato útil, no un fallo tuyo.
+Haz los módulos en orden. Regla: si tu salida no coincide con la esperada, anótalo. Es un dato útil, no un fallo tuyo.
 
 Empieza desde la carpeta de este worked example, la que contiene `ejercicios.md` (los comandos usan rutas relativas a ella).
+
+
+---
+
+## Antes de empezar
+
+### La idea
+SEGB es una "caja negra" para robots: guarda qué ocurrió para poder revisarlo después. En este ejemplo
+inventado, una persona le pide noticias a un robot (ARI), el robot decide y responde.
+
+### Lo que necesitas saber
+La información se guarda en un **grafo** hecho de **tripletas**: sujeto, propiedad y objeto. Se escribe en
+ficheros Turtle (`.ttl`):
+
+```turtle
+ex:aviso_1 a schema:Message ;
+    schema:sender ex:robot_ejemplo ;
+    prov:wasGeneratedBy ex:habla_ejemplo .
+```
+
+- Se lee: "`aviso_1` es un mensaje; lo envió `robot_ejemplo`; lo generó `habla_ejemplo`".
+- `a` significa "es un". El `;` repite el sujeto y el `.` cierra el bloque.
+- Cada cosa tiene una dirección única (**URI**). `ex:` abrevia `http://example.org#`, así que
+  `ex:aviso_1` es `<http://example.org#aviso_1>`.
+- Una **actividad** es algo que ocurrió (escuchar, decidir, hablar).
+- **SPARQL** es el lenguaje para preguntar al grafo. Las palabras con `?` son huecos que se rellenan solos.
+
+### Prepara el entorno
+1. Arranca SEGB desde la raíz del repo: `docker compose -f docker-compose.yaml up -d`.
+2. Comprueba que está listo: `curl -s localhost:5000/healthz/ready` debe dar `"ready":true`.
+3. Vuelve a la carpeta de este worked example (`cd worked-example`). En `ttl/escenario/` están los cuatro
+   ficheros, de `01_personas.ttl` a `04_respuesta.ttl`.
+
+Si SEGB tiene la autenticación activada, mira "Autenticación y roles" en `README.md`.
+
+### Cómo lanzar una consulta
+1. Guarda **una sola** consulta en un fichero `consulta.rq`. Delante puede llevar una línea de comentario como
+   mucho: con dos, SEGB 1.3.1 la rechaza.
+2. Envíala:
+
+```bash
+curl -sG localhost:5000/query --data-urlencode query@consulta.rq
+# Con autenticación, añade: -H "Authorization: Bearer $SEGB_TOKEN"
+```
+
+La respuesta llega en Turtle. Cada fila es un bloque `ns:Result`, y cada `?hueco` aparece como `ns:hueco`:
+
+```turtle
+[] a ns:Result ;
+    ns:n 0 .
+```
+
+Aquí hay una fila y `?n` vale 0.
 
 ---
 
@@ -65,39 +118,81 @@ Si la autenticación está activada, añade `-H "Authorization: Bearer $SEGB_TOK
 
 ---
 
-## M4. Enviar el escenario (escribe en el grafo)
+## M4. Enviar el escenario
+**Objetivo:** comprobar los ficheros, publicarlos una sola vez y ver qué rastro deja el envío. Hazlo después de
+M1 a M3.
 
-Solo tras M1–M3. Primero, lista lo que se enviaría (sin enviar):
+> **Atención:** el paso 4 se hace **una sola vez**. No uses `POST /ttl/delete_all`: borra todo el grafo.
+
+1. **Mira cómo está el grafo antes.** Cuenta las tripletas del escenario y apunta el número:
+
+```sparql
+SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o . FILTER(STRSTARTS(STR(?s), "http://example.org#")) }
+```
+
+Si no es 0, el escenario (u otros datos con ese prefijo) ya está: pregunta antes de enviar.
+
+2. **Ensaya.** Esto valida cada fichero y no publica nada (con autenticación, la validación pide un token
+   `admin`; si solo tienes `logger`, añade `--sin-validar` aquí y en el paso 4):
 
 ```bash
 python3 publica_escenario.py
 ```
 
-Si la autenticación está activada, antes exporta un token de rol `logger` o `admin` en `SEGB_TOKEN` (ver `README.md`).
-
-Salida esperada: los cuatro ficheros, en orden (`01_personas.ttl`, `02_escucha.ttl`, `03_decision.ttl`, `04_respuesta.ttl`), sin ningún `HTTP`.
-
-Ahora envía de verdad (una sola vez):
+3. **Lee el resultado.** Un `error` impide enviar. Un `warning` avisa, pero deja enviar. Apunta las
+   tripletas, errores y avisos de cada fichero.
+4. **Publica:**
 
 ```bash
 python3 publica_escenario.py --enviar
 ```
 
-Salida esperada: un `HTTP 201` (o `200`) por fichero.
+   Apunta el `log_id` de cada fichero: identifica ese envío.
+5. **Comprueba el cambio.** Repite la consulta del paso 1.
+6. **Mira la auditoría**, el registro de quién cambió el grafo (rol `auditor` o `admin`):
 
-**Advertencia:** cada envío deja una entrada en `/history`. Si reenvías, quedan duplicados en la auditoría. Para verlo: `curl -s localhost:5000/history`.
+```bash
+curl -s localhost:5000/history
+curl -s "localhost:5000/log?log_id=PON_AQUI_UN_LOG_ID"
+# Con autenticación, añade a cada orden: -H "Authorization: Bearer $SEGB_TOKEN"
+```
 
-**Explica:** ¿por qué el escenario se envía en 4 pasos y no en uno? ¿Qué pasa si el paso 4 se envía antes que el 3?
+**Preguntas**
+- ¿Por qué un fichero puede ser válido y tener un aviso?
+- ¿En qué se diferencian la auditoría (`/history`) y los datos que consultas con `/query`?
+- **Sin ejecutarlo:** si enviaras dos veces, ¿qué cambiaría en el grafo y qué en la auditoría?
+- ¿Por qué el escenario se envía en cuatro pasos y no en uno?
+- **Sin ejecutarlo:** ¿qué pasaría si el fichero 04 se enviara antes que el 03?
+
+**Tu respuesta:**
+
+Mira `soluciones.md` solo después de intentarlo.
 
 ---
 
-## M5. Comprobar que el grafo se fusionó
+## M5. Comprobar la fusión por URI
+**Objetivo:** ver que dos ficheros que usan la misma URI describen **la misma cosa**.
 
-1. Ejecuta `consultas.sparql` consulta **C1** en `/query`. Debe aparecer `decision_demo_1`.
-2. Ejecuta **C2**. Debe aparecer `speech_demo_1 → decision_demo_1`.
-3. Ejecuta **C6**, que lista todo lo que se sabe de `decision_demo_1`. Debe devolver 8 filas. Pregunta: ¿tiene `prov:endedAtTime`? Aparece en el paso 4, no en el 3. ¿Por qué lo ves completo?
+1. Abre `03_decision.ttl` y `04_respuesta.ttl`. Apunta qué dice cada uno **con `ex:decision_demo_1` como sujeto**.
+2. **Predice** cuántas filas devolverá la consulta. Cuenta una por cada propiedad y valor: si una línea tiene
+   dos valores separados por coma, son dos.
+3. Ejecuta (es la consulta **C5** de `consultas.sparql`):
 
-**Explica:** qué significa "fusión por URI" con tus palabras. Pista: un grafo es un conjunto de tripletas.
+```sparql
+SELECT ?p ?o WHERE { <http://example.org#decision_demo_1> ?p ?o }
+```
+
+4. Marca cada fila con el fichero del que viene (03 o 04).
+
+**Preguntas**
+- ¿Coincide con tu predicción? Si hay filas de más, ¿de dónde pueden haber salido?
+- ¿Qué sabrías de la decisión si solo se hubiera enviado el 03?
+- ¿Qué pasaría si en el 04 `ex:` abreviara otra dirección?
+- Explica con tus palabras qué es la **fusión por URI**. Pista: un grafo es un conjunto de tripletas.
+
+**Tu respuesta:**
+
+Mira `soluciones.md` solo después de intentarlo.
 
 ---
 
@@ -123,32 +218,116 @@ El validador revisa cada fichero por separado: un aviso `SEM_SUBJECT_WITHOUT_TYP
 
 ---
 
-## M7. Consultas de lectura
+## M7. Consultas
+**Objetivo:** hacer preguntas al grafo y escribir tu propia consulta.
 
-Pega en `/query` las consultas de `consultas.sparql`, una a una (C1 a C7). Para cada una, escribe en una frase qué pregunta responde.
+### 1. Las consultas del escenario
+Ejecuta, una a una, las consultas **C1 a C4** de `consultas.sparql`. Para cada una, escribe en una frase qué
+pregunta responde.
 
-**Ojo al copiar:** `/query` rechaza una consulta con dos o más líneas de comentario delante del `SELECT` (o del `PREFIX`). Copia cada consulta desde su línea `# C…` (una sola línea de comentario) o sin comentarios.
+### 2. ¿Qué hizo el robot?
 
-**Pregunta de control:** ¿por qué C5 usa `schema:sender <http://example.org#ari_demo>` y no un nombre? (Pista: en RDF se identifica por URI.)
+```sparql
+SELECT ?actividad ?inicio ?fin WHERE {
+  ?actividad <http://www.gsi.upm.es/ontologies/segb/ns#wasPerformedBy> <http://example.org#ari_demo> .
+  OPTIONAL { ?actividad <http://www.w3.org/ns/prov#startedAtTime> ?inicio }
+  OPTIONAL { ?actividad <http://www.w3.org/ns/prov#endedAtTime> ?fin }
+}
+```
+
+Se lee: "busca las actividades que hizo `ari_demo` y, si las tienen, su inicio y su fin". Predice cuántas
+saldrán antes de ejecutarla.
+
+### 3. ¿Qué se dijo?
+
+```sparql
+SELECT ?mensaje ?quien ?texto ?actividad WHERE {
+  ?mensaje <http://schema.org/text> ?texto ;
+           <http://schema.org/sender> ?quien ;
+           <http://www.w3.org/ns/prov#wasGeneratedBy> ?actividad .
+  FILTER(STRSTARTS(STR(?mensaje), "http://example.org#"))
+}
+```
+
+Identifica qué dijo la persona y qué dijo el robot.
+
+### 4. Ahora tú
+a. Amplía la consulta de «¿Qué hizo el robot?» para ver también quién disparó cada actividad
+   (`<http://www.gsi.upm.es/ontologies/segb/ns#triggeredByActivity>`). No pierdas ninguna fila.
+
+b. Escribe una consulta que devuelva las actividades que usaron un modelo
+   (`<http://www.gsi.upm.es/ontologies/segb/ns#usedMLModel>`) y cuál usaron.
+
+**Preguntas**
+- La consulta de «¿Qué hizo el robot?» identifica al robot con `<http://example.org#ari_demo>`. ¿Por qué no con su nombre?
+- ¿Para qué sirve `OPTIONAL`?
+- ¿Para qué sirve el `FILTER` de la consulta de «¿Qué se dijo?»?
+- ¿Puedes fiarte del orden de las filas?
+
+**Tu respuesta:**
+
+Mira `soluciones.md` solo después de intentarlo.
 
 ---
 
-## M8. Worked example: auditoría de un mensaje
+## M8. Auditar una respuesta
+**Objetivo:** averiguar de dónde salió una respuesta del robot siguiendo los enlaces registrados.
 
-Caso: `msg_demo_2` dice "Here is some news. Stop being so sensitive." ¿Qué causó ese mensaje?
+**La situación.** ARI contestó: *"Here is some news. Stop being so sensitive."* Esa respuesta es
+`ex:msg_demo_2`. Te piden explicar cómo se llegó hasta ella.
 
-Sigue la cadena **sin mirar la respuesta**:
+### Cómo buscar
+Elige una de las dos formas (lo básico está al principio del documento):
+- **Leyendo** los ficheros de `ttl/escenario/`. Un mismo nodo puede aparecer en más de un fichero.
+- **Consultando** (después de M4). Pon entre `<...>` la dirección completa de lo que quieres mirar:
 
-1. ¿Qué actividad lo generó? (`prov:wasGeneratedBy`)
-2. ¿Qué disparó esa actividad? (`segb:triggeredByActivity`)
-3. ¿Qué modelo usó la decisión? (`segb:usedMLModel`)
-4. ¿Qué hizo el robot antes de decidir? (`prov:wasGeneratedBy` del mensaje de María)
+```sparql
+SELECT ?p ?o WHERE { <http://example.org#msg_demo_2> ?p ?o }
+```
 
-Ejecuta **C5** (llega hasta el modelo) y **C7** (llega además hasta el mensaje de María) y compara.
+**Seguir un enlace** es tomar el objeto (`?o`) de una fila y volver a consultar poniéndolo como sujeto.
 
-**Explica:** el grafo no dice si el mensaje es ético; dice **de dónde salió**. ¿Qué datos le faltan al auditor para decidir si el modelo es responsable? (Pista: `llm_demo_1` no tiene descripción en el escenario: ¿qué sabrías de él si estuviera descrito con `mls:Run`, `mls:Implementation` y `mls:Dataset`?)
+### Paso a paso
+Rellena una fila antes de pasar a la siguiente: la respuesta de cada salto es el punto de partida del próximo.
 
-**Nota:** el escenario es sintético. Lo que compruebas es la trazabilidad (de dónde sale el mensaje), no si el robot se portó bien. Para ver el escenario original con más pasos (modelos, emociones, noticias), lee el tutorial del tag `0.3.0`: `git show 0.3.0:docs/SEGB_tutorial.rst`, sección «Retrieving the global graph».
+| Salto | Parte de | Pregunta | Propiedad | Lo que encuentras |
+|---|---|---|---|---|
+| 1 | `ex:msg_demo_2` | ¿Qué actividad generó el mensaje? | `prov:wasGeneratedBy` | |
+| 2 | respuesta 1 | ¿Qué la disparó? | `segb:triggeredByActivity` | |
+| 3 | respuesta 2 | ¿Qué modelo usó? | `segb:usedMLModel` | |
+| 4 | respuesta 2 | ¿Qué la disparó? | `segb:triggeredByActivity` | |
+| 5 | respuesta 4 | ¿Qué mensaje generó esa actividad y quién lo envió? | `prov:wasGeneratedBy`, `schema:sender` | |
+
+**Pista para el salto 5.** Aquí la flecha va al revés: la actividad no apunta al mensaje, es el mensaje el que
+apunta a la actividad. Busca quién tiene tu respuesta 4 como **objeto**. Con una consulta:
+
+```sparql
+SELECT ?s ?p WHERE { ?s ?p <DIRECCION_DE_TU_RESPUESTA_4> }
+```
+
+Pueden salir varias filas: quédate con la que use `prov:wasGeneratedBy` y consulta después quién lo envió.
+
+### Une la cadena
+1. Escribe en una frase el recorrido, desde la respuesta de ARI hasta el mensaje original.
+2. Compón tú la consulta de auditoría con lo que has visto en **C2**, **C3** y **C4** de `consultas.sparql`, más
+   `prov:wasGeneratedBy` de la tabla. Usar la misma variable (por ejemplo, `?actividad`) en dos líneas las une.
+   Empieza llegando desde el mensaje del robot hasta el modelo y después alárgala hasta el mensaje de la persona.
+3. En tu consulta, ¿cómo indicas que el mensaje es del robot? ¿Por qué con su URI y no con su nombre?
+
+### Piensa como auditor
+- Si la consulta unida no devuelve filas, ¿cómo averiguas qué enlace falta?
+- El grafo no dice si el mensaje es ético: dice **de dónde salió**. ¿Dice **por qué** ARI respondió así? Separa lo que está registrado de lo que estás suponiendo.
+- ¿Qué más habría que registrar para auditar esa respuesta?
+- Del modelo `llm_demo_1` solo se sabe que es un modelo. ¿Qué más sabrías si estuviera descrito con
+  `mls:Run` (una ejecución), `mls:Implementation` (el software) y `mls:Dataset` (los datos)?
+
+El escenario es sintético: compruebas la trazabilidad, no si el robot se portó bien. El escenario original, con más
+pasos, está en el tutorial del tag `0.3.0`: `git show 0.3.0:docs/SEGB_tutorial.rst`, sección «Retrieving the
+global graph».
+
+**Tu respuesta:**
+
+Mira `soluciones.md` solo después de intentarlo.
 
 ---
 
