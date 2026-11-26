@@ -1,0 +1,29 @@
+# C1. Actividades registradas y quién las hizo
+PREFIX segb: <http://www.gsi.upm.es/ontologies/segb/ns#>
+SELECT ?actividad ?agente WHERE {
+  ?actividad a segb:LoggedActivity ;
+             segb:wasPerformedBy ?agente .
+} LIMIT 50
+
+# C2. Causas directas: qué actividad disparó a cuál
+PREFIX segb: <http://www.gsi.upm.es/ontologies/segb/ns#>
+SELECT ?actividad ?causa WHERE {
+  ?actividad segb:triggeredByActivity ?causa .
+}
+
+# C3. Mensajes con texto y emisor
+PREFIX schema: <http://schema.org/>
+SELECT ?msg ?texto ?emisor WHERE {
+  ?msg a schema:Message ;
+       schema:text ?texto ;
+       schema:sender ?emisor .
+}
+
+# C4. Modelos de IA usados por cada actividad
+PREFIX segb: <http://www.gsi.upm.es/ontologies/segb/ns#>
+SELECT ?actividad ?modelo WHERE {
+  ?actividad segb:usedMLModel ?modelo .
+}
+
+# C5. Todo lo que se sabe de decision_demo_1 (fusión de los pasos 3 y 4)
+SELECT ?p ?o WHERE { <http://example.org#decision_demo_1> ?p ?o }

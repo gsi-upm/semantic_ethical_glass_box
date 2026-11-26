@@ -1,0 +1,11 @@
+# Paso 1 (sintético): quién está en el escenario.
+@prefix ex:   <http://example.org#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix oro:  <http://kb.openrobots.org#> .
+
+ex:maria_demo a prov:Person, foaf:Person, oro:Human ;
+    foaf:name "Maria Demo"@es .
+
+ex:ari_demo a prov:SoftwareAgent, oro:Robot ;
+    foaf:name "ARI demo"@en .
