@@ -1,0 +1,16 @@
+# Paso 3 (sintético): decisión disparada por la escucha. Solo se registra el inicio.
+# El resto de tripletas de decision_demo_1 se añaden en el paso 4 (fusión por URI).
+@prefix ex:   <http://example.org#> .
+@prefix segb: <http://www.gsi.upm.es/ontologies/segb/ns#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix mls:  <http://www.w3.org/ns/mls#> .
+@prefix oro:  <http://kb.openrobots.org#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+ex:llm_demo_1 a mls:Model .
+
+ex:decision_demo_1 a segb:LoggedActivity, oro:DecisionMakingAction ;
+    segb:wasPerformedBy ex:ari_demo ;
+    segb:triggeredByActivity ex:listening_demo_1 ;
+    segb:usedMLModel ex:llm_demo_1 ;
+    prov:startedAtTime "2026-11-10T10:00:03"^^xsd:dateTime .

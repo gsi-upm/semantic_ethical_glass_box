@@ -1,0 +1,17 @@
+# Paso 2 (sintético): ARI escucha a María. Genera el mensaje.
+@prefix ex:   <http://example.org#> .
+@prefix segb: <http://www.gsi.upm.es/ontologies/segb/ns#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix schema: <http://schema.org/> .
+@prefix oro:  <http://kb.openrobots.org#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+ex:listening_demo_1 a segb:LoggedActivity, oro:ListeningEvent ;
+    segb:wasPerformedBy ex:ari_demo ;
+    prov:startedAtTime "2026-11-10T10:00:00"^^xsd:dateTime ;
+    prov:endedAtTime   "2026-11-10T10:00:03"^^xsd:dateTime .
+
+ex:msg_demo_1 a schema:Message ;
+    schema:text "Good morning, Ari. Could you show me news about climate change?"@en ;
+    schema:sender ex:maria_demo ;
+    prov:wasGeneratedBy ex:listening_demo_1 .

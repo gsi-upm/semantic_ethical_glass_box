@@ -1,0 +1,23 @@
+# Paso 4 (sintético): respuesta hablada. Completa la decisión (fusión con decision_demo_1).
+@prefix ex:   <http://example.org#> .
+@prefix segb: <http://www.gsi.upm.es/ontologies/segb/ns#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix schema: <http://schema.org/> .
+@prefix oro:  <http://kb.openrobots.org#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+ex:speech_demo_1 a segb:LoggedActivity, oro:SpeechAction ;
+    segb:wasPerformedBy ex:ari_demo ;
+    segb:triggeredByActivity ex:decision_demo_1 ;
+    segb:producedEntityResult ex:msg_demo_2 ;
+    prov:startedAtTime "2026-11-10T10:00:06"^^xsd:dateTime ;
+    prov:endedAtTime   "2026-11-10T10:00:08"^^xsd:dateTime .
+
+ex:msg_demo_2 a schema:Message ;
+    schema:text "Here is some news. Stop being so sensitive."@en ;
+    schema:sender ex:ari_demo ;
+    prov:wasGeneratedBy ex:speech_demo_1 .
+
+# Completa la decisión: añade la salida y la hora de fin al nodo del paso 3.
+ex:decision_demo_1 prov:endedAtTime "2026-11-10T10:00:08"^^xsd:dateTime ;
+    segb:producedActivityResult ex:speech_demo_1 .
